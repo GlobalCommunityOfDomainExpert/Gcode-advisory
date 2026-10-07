@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Reset password", robots: { index: fa
 export default async function ResetPasswordPage({ searchParams }: { searchParams: Promise<{ token?: string }> }) {
   const { token } = await searchParams;
   return (
-    <AuthDialog title="Reset Password" subtitle="Choose a new, secure password">
+    <AuthDialog closeTo="/sign-in" title="Reset Password" subtitle="Choose a new, secure password">
       <ResetPasswordForm token={isResetToken(token) ? token : null} />
     </AuthDialog>
   );

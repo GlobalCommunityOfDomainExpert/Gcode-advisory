@@ -4,11 +4,14 @@ import { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { AuthModal } from "@/components/layout";
 
-/** The auth modal as a route: closing it returns to the home page. */
-export function AuthDialog({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+/**
+ * The auth modal as a route. There is no public page behind it, so closing goes to sign-in; on sign-in itself
+ * (`closeTo` omitted) there is nowhere to go and closing does nothing.
+ */
+export function AuthDialog({ title, subtitle, closeTo, children }: { title: string; subtitle: string; closeTo?: string; children: ReactNode }) {
   const router = useRouter();
   return (
-    <AuthModal title={title} subtitle={subtitle} onClose={() => router.push("/")}>
+    <AuthModal title={title} subtitle={subtitle} onClose={() => closeTo && router.push(closeTo)}>
       {children}
     </AuthModal>
   );

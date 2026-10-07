@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Forgot password" };
 
 export default function ForgotPasswordPage() {
   return (
-    <AuthDialog title="Forgot Password" subtitle="Enter your email and we’ll send you a link to reset it">
+    <AuthDialog closeTo="/sign-in" title="Forgot Password" subtitle="Enter your email and we’ll send you a link to reset it">
       <ForgotPasswordForm />
     </AuthDialog>
   );

@@ -42,7 +42,7 @@ export function SignUpFlow({ initialStep, initialMaskedEmail, redirectTo }: Sign
   const [maskedEmail, setMaskedEmail] = useState(initialMaskedEmail);
 
   return (
-    <AuthDialog {...TITLES[step]}>
+    <AuthDialog closeTo="/sign-in" {...TITLES[step]}>
       {step === 0 && (
         <DetailsStep
           onDone={(email) => {
