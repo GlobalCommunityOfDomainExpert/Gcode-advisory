@@ -106,8 +106,9 @@ function parseService(raw: Obj): Service | null {
   if (type === null || contribution === null || !duration || !buffer || rate === null) return null;
   if (rate !== "" && !(/^\d{1,6}$/.test(rate) && Number(rate) <= 100_000)) return null;
   const mode = raw.mode === "until" ? "until" : "rolling";
-  const from = raw.from === "" || raw.from === undefined ? "" : isDate(raw.from) ? raw.from : null;
-  const to = raw.to === "" || raw.to === undefined ? "" : isDate(raw.to) ? raw.to : null;
+  // Oracle has no empty string, so a backend may send null for "not set".
+  const from = raw.from == null || raw.from === "" ? "" : isDate(raw.from) ? raw.from : null;
+  const to = raw.to == null || raw.to === "" ? "" : isDate(raw.to) ? raw.to : null;
   if (from === null || to === null || (from && to && to < from)) return null;
   if (!isObj(raw.days)) return null;
   const days = {} as Service["days"];
@@ -354,9 +355,15 @@ export function normalizeDoc(raw: unknown, role: ProfileRole, fallbackName: stri
     const l = raw.lists;
     lists.domains = stringList(l.domains, 10, 60) ?? [];
     lists.skills = stringList(l.skills, 30, 40) ?? [];
+    // Every row gets every key, in this order, defaulting to "": a backend that stores NULL for a blank cell (Oracle
+    // does) would otherwise drop the key, and the "first value" completion check would read the wrong column.
+    const ROW_KEYS = { career: ["title", "org", "period", "desc"], education: ["institution", "degree", "period"], projects: ["title", "desc", "link"], contacts: ["name", "role", "email", "phone"] } as const;
     for (const key of ["career", "education", "projects", "contacts"] as const) {
       const arr = Array.isArray(l[key]) ? (l[key] as unknown[]) : [];
-      lists[key] = arr.filter(isObj).slice(0, 20).map((r) => Object.fromEntries(Object.entries(r).filter(([, v]) => typeof v === "string"))) as never;
+      lists[key] = arr
+        .filter(isObj)
+        .slice(0, 20)
+        .map((r) => Object.fromEntries(ROW_KEYS[key].map((k) => [k, typeof r[k] === "string" ? (r[k] as string).slice(0, 500) : ""]))) as never;
     }
   }
 
