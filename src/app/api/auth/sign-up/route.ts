@@ -1,6 +1,7 @@
 import { clientIp, fail, isResponse, json, limited, readJson, str } from "@/lib/server/guard";
 import { ords } from "@/lib/server/ords";
 import { passwordForBackend } from "@/lib/server/password";
+import { authSecret } from "@/lib/server/env";
 import { setTicket } from "@/lib/server/ticket";
 import { isPasswordValid } from "@/lib/auth/password-rules";
 import { isEmail, normalizeEmail, normalizeFullName, normalizePhone } from "@/lib/auth/validators";
@@ -18,6 +19,14 @@ export async function POST(request: Request) {
   if (!isEmail(email)) return fail("Enter a valid email address.");
   if (!phone) return fail("Enter a 10-digit mobile number.");
   if (!isPasswordValid(password) || password.toLowerCase() === email) return fail("Password does not meet the requirements.");
+
+  // Fail before touching the backend if the server isn't configured: otherwise the account is created, saving the
+  // signed cookie then throws, and the person is left with an account they can't finish signing up for.
+  try {
+    authSecret();
+  } catch {
+    return fail("Sign-up isn’t available right now.", 503);
+  }
 
   const blocked = limited([
     [`signup:ip:${clientIp(request)}`, 10, 60 * 60],
