@@ -12,6 +12,8 @@ export interface VisibilityBarProps {
   onPreview?: () => void;
   onPublish?: () => void;
   onUnpublish?: () => void;
+  /** Disables Publish / Unpublish while a request is running. */
+  busy?: boolean;
 }
 
 /**
@@ -25,12 +27,14 @@ export function VisibilityBar({
   onPreview,
   onPublish,
   onUnpublish,
+  busy = false,
 }: VisibilityBarProps) {
-  const preview = (
+  // Preview mode ships in Sprint 15: until a handler is passed there is no button.
+  const preview = onPreview ? (
     <Button variant="secondary" size="sm" onClick={onPreview}>
       <Icon icon={Eye} size="sm" /> Preview
     </Button>
-  );
+  ) : null;
 
   if (published)
     return (
@@ -42,7 +46,7 @@ export function VisibilityBar({
         </div>
         <span className="flex gap-2">
           {preview}
-          <Button variant="secondary" size="sm" onClick={onUnpublish}>
+          <Button variant="secondary" size="sm" onClick={onUnpublish} loading={busy}>
             Unpublish
           </Button>
         </span>
@@ -84,7 +88,7 @@ export function VisibilityBar({
       </div>
       <span className="flex gap-2">
         {preview}
-        <Button size="sm" onClick={onPublish}>
+        <Button size="sm" onClick={onPublish} loading={busy}>
           Publish profile
         </Button>
       </span>

@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GraduationCap, User } from "lucide-react";
+import { Building2, GraduationCap, Rocket, User } from "lucide-react";
 import { Button, Checkbox, Input, PasswordInput } from "@/components/atoms";
 import { FormField, PasswordStrengthMeter, SelectableCard } from "@/components/molecules";
 import { postAuth } from "@/lib/auth/client";
@@ -23,6 +23,8 @@ const TITLES: Record<Step, { title: string; subtitle: string }> = {
 const ROLES: { role: SignUpRole; title: string; subtitle: string; icon: typeof User }[] = [
   { role: "EXPERT", title: "Domain Expert", subtitle: "Share expertise & mentor", icon: User },
   { role: "FRESHER", title: "Fresher / Intern", subtitle: "Learn and grow", icon: GraduationCap },
+  { role: "STARTUP", title: "Startup / MSME", subtitle: "Build and scale", icon: Rocket },
+  { role: "INSTITUTION", title: "Institution", subtitle: "Partner with GCODE", icon: Building2 },
 ];
 
 export interface SignUpFlowProps {

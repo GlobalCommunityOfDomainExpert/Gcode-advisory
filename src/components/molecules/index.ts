@@ -23,3 +23,4 @@ export * from "./tabs";
 export * from "./tag-pill";
 export * from "./timeline";
 export * from "./toggle-group";
+export * from "./upload-zone";

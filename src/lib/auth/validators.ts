@@ -18,7 +18,6 @@ export function normalizePhone(value: string): string | null {
 
 /** Collapses whitespace and strips control characters. Null when empty or out of range. */
 export function normalizeFullName(value: string): string | null {
-  // eslint-disable-next-line no-control-regex
   const name = value.replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").trim();
   return name.length >= 2 && name.length <= 100 ? name : null;
 }
@@ -28,8 +27,8 @@ export function normalizeOtp(value: string): string | null {
   return code.length === OTP_LENGTH ? code : null;
 }
 
-/** Stakeholder roles open at launch (Startup and Institution arrive in Sprint 12). Values are `GCODE_ROLES.ROLE_NAME`. */
-export const SIGN_UP_ROLES = ["EXPERT", "FRESHER"] as const;
+/** The four stakeholder roles a new account can choose. Values are `GCODE_ROLES.ROLE_NAME`. */
+export const SIGN_UP_ROLES = ["EXPERT", "FRESHER", "STARTUP", "INSTITUTION"] as const;
 export type SignUpRole = (typeof SIGN_UP_ROLES)[number];
 
 export function isSignUpRole(value: unknown): value is SignUpRole {

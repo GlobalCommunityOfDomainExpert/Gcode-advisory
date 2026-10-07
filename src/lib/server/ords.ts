@@ -3,6 +3,8 @@ import { ordsBaseUrl } from "./env";
 export type OrdsResult<T> = { ok: true; data: T } | { ok: false; status: number; message: string };
 
 interface OrdsOptions {
+  /** Defaults to POST when there is a body, GET otherwise. */
+  method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
   /** Body fields that must go out as JSON numbers (ids too large for a JS number are carried as strings). */
   numericFields?: string[];
@@ -19,7 +21,7 @@ const BIG_ID_FIELDS = /("(?:user_id|sub)"\s*:\s*)(\d{15,})/g;
  * Calls ORDS from the server. ORDS answers 200 with `{ "error": ... }` for some failures, so both are checked.
  * `message` is for matching and logs; routes decide what the user is allowed to read.
  */
-export async function ords<T>(path: string, { body, numericFields = [], token }: OrdsOptions = {}): Promise<OrdsResult<T>> {
+export async function ords<T>(path: string, { method, body, numericFields = [], token }: OrdsOptions = {}): Promise<OrdsResult<T>> {
   let payload = body === undefined ? undefined : JSON.stringify(body);
   for (const field of numericFields) {
     payload = payload?.replace(new RegExp(`("${field}"\\s*:\\s*)"(\\d{1,40})"`), "$1$2");
@@ -28,7 +30,7 @@ export async function ords<T>(path: string, { body, numericFields = [], token }:
   let res: Response;
   try {
     res = await fetch(`${ordsBaseUrl()}${path}`, {
-      method: body === undefined ? "GET" : "POST",
+      method: method ?? (body === undefined ? "GET" : "POST"),
       headers: {
         Accept: "application/json",
         ...(payload ? { "Content-Type": "application/json" } : {}),

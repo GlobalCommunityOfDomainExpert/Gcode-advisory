@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   const ticket = await getTicket();
   if (!ticket || ticket.stage !== "verified") return fail("Verify your email first.", 401);
 
-  if (!isSignUpRole(body.role)) return fail("Choose Domain Expert or Fresher / Intern.");
+  if (!isSignUpRole(body.role)) return fail("Choose who you are.");
 
   const blocked = limited([[`role:uid:${ticket.uid}`, 10, 10 * 60]]);
   if (blocked) return blocked;

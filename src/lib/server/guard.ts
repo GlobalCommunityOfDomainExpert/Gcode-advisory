@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { siteOrigin } from "./env";
 import { hit, type LimitResult } from "./rate-limit";
 
-const MAX_BODY_BYTES = 8 * 1024;
+const DEFAULT_MAX_BODY_BYTES = 8 * 1024;
 
 /** The caller's address. x-forwarded-for is only trustworthy behind a proxy that overwrites it; set that up at the edge. */
 export function clientIp(request: Request): string {
@@ -30,6 +30,13 @@ export function limited(rules: [key: string, max: number, windowSeconds: number]
   return null;
 }
 
+/** Same-origin only: the Origin header must be this site and Sec-Fetch-Site must not say cross-site. */
+export function checkOrigin(request: Request): NextResponse | null {
+  const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
+  return origin !== siteOrigin() || (fetchSite && fetchSite !== "same-origin") ? fail("Request blocked.", 403) : null;
+}
+
 /**
  * Gate for every state-changing auth request, run before anything else:
  *  - same-origin only: the Origin header must be this site and Sec-Fetch-Site must not say cross-site. With
@@ -37,14 +44,13 @@ export function limited(rules: [key: string, max: number, windowSeconds: number]
  *  - JSON content type only, so a plain HTML form can't post here
  *  - a small body, parsed safely
  */
-export async function readJson(request: Request): Promise<Record<string, unknown> | NextResponse> {
-  const origin = request.headers.get("origin");
-  const fetchSite = request.headers.get("sec-fetch-site");
-  if (origin !== siteOrigin() || (fetchSite && fetchSite !== "same-origin")) return fail("Request blocked.", 403);
+export async function readJson(request: Request, maxBytes = DEFAULT_MAX_BODY_BYTES): Promise<Record<string, unknown> | NextResponse> {
+  const blocked = checkOrigin(request);
+  if (blocked) return blocked;
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return fail("Unsupported request.", 415);
 
   const text = await request.text();
-  if (text.length > MAX_BODY_BYTES) return fail("Request too large.", 413);
+  if (text.length > maxBytes) return fail("Request too large.", 413);
   try {
     const value = JSON.parse(text);
     return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : fail("Invalid request.");

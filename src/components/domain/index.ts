@@ -8,6 +8,7 @@ export * from "./focus-tile";
 export * from "./next-step-strip";
 export * from "./profile-header";
 export * from "./profile-kit";
+export * from "./profile-section-nav";
 export * from "./setting-row";
 export * from "./stat-strip";
 export * from "./visibility-bar";
