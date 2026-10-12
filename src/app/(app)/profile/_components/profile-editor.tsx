@@ -118,6 +118,12 @@ export function ProfileEditor({ initial, initialTab, displayName, accountEmail }
   };
 
   /** Saves the open tab. Returns false (and shows why) when the server refuses it. */
+  /** Opens the preview of what is saved: unsaved edits are saved first, so the preview shows what was just typed. Only experts have a public page; for everyone else the profile view is the preview. */
+  async function previewProfile() {
+    if (!(await saveCurrent())) return;
+    router.push(doc.role === "expert" ? "/profile/preview" : "/profile/view");
+  }
+
   async function saveCurrent(): Promise<boolean> {
     if (!dirty) return true;
     setSaving(true);
@@ -225,7 +231,7 @@ export function ProfileEditor({ initial, initialTab, displayName, accountEmail }
           </div>
         </div>
 
-        <VisibilityBar published={doc.published} percent={live.pct} sectionsLeft={sectionsLeft} where={listedIn(doc.role)} busy={publishing} onPublish={() => setPublished(true)} onUnpublish={() => setPublished(false)} />
+        <VisibilityBar published={doc.published} percent={live.pct} sectionsLeft={sectionsLeft} where={listedIn(doc.role)} busy={publishing} onPreview={previewProfile} onPublish={() => setPublished(true)} onUnpublish={() => setPublished(false)} />
 
         <div className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
           <nav aria-label="Profile sections" className="bg-surface-light ring-primary/10 sticky top-6 hidden space-y-1 rounded-lg p-2 shadow-sm ring-1 lg:block">

@@ -113,14 +113,12 @@ export default async function ProfileViewPage() {
       <ButtonLink href={editTab(editTabForIntro)}>
         <Pencil className="size-4" aria-hidden="true" /> Edit profile
       </ButtonLink>
-      {doc.published && doc.publicSlug && (
-        <>
-          <ButtonLink href={`/experts/${doc.publicSlug}`} variant="outline">
-            Preview
-          </ButtonLink>
-          {publicUrl && <ShareButton title={`${name} on GCODE`} url={publicUrl} />}
-        </>
+      {role === "expert" && (
+        <ButtonLink href="/profile/preview" variant="outline">
+          Preview
+        </ButtonLink>
       )}
+      {doc.published && doc.publicSlug && publicUrl && <ShareButton title={`${name} on GCODE`} url={publicUrl} />}
     </>
   );
 
