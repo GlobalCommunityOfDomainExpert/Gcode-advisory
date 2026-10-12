@@ -3,7 +3,7 @@
  * backslash-tricked ("/\host"), containing control characters or pointing at /api falls back to the default.
  * The result is rebuilt from a parsed URL, never echoed from the input.
  */
-export function safeRedirect(value: string | null | undefined, fallback = "/directory"): string {
+export function safeRedirect(value: string | null | undefined, fallback = "/dashboard"): string {
   if (!value || value.length > 512) return fallback;
   if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return fallback;
   if (/[\u0000-\u001f\u007f]/.test(value)) return fallback;

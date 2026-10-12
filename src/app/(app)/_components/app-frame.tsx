@@ -3,7 +3,7 @@
 import { ReactNode, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CalendarCheck, CalendarClock, CalendarX, Clock, Inbox, Send, Settings, UserRound, Users, Video, Wallet, type LucideIcon } from "lucide-react";
+import { CalendarCheck, CalendarClock, CalendarX, Clock, LayoutDashboard, Inbox, Send, Settings, UserRound, Users, Video, Wallet, type LucideIcon } from "lucide-react";
 import { AuthedShell } from "@/components/layout";
 import type { ProfileMenuUser } from "@/components/layout";
 import type { SidebarLink } from "@/components/layout";
@@ -15,7 +15,8 @@ import type { NotifItem } from "@/components/layout";
 
 /** Experts also get Payouts (their earnings), as in the wireframe. */
 const sidebarFor = (isExpert: boolean): SidebarLink[] => [
-  { label: "Directory", href: "/directory", icon: Users, groupLabel: "Workspace" },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, groupLabel: "Workspace" },
+  { label: "Directory", href: "/directory", icon: Users },
   { label: "My bookings", href: "/bookings", icon: CalendarClock },
   ...(isExpert ? [{ label: "Payouts", href: "/payouts", icon: Wallet }] : []),
   { label: "Profile", href: "/profile/view", icon: UserRound, groupLabel: "Account" },
