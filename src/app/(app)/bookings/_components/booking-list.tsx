@@ -216,7 +216,7 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
                 )}
               </div>
             </div>
-            {b.actions.length > 0 && (
+            {(b.actions.length > 0 || (b.role === "requester" && (b.status === "CANCELLED" || b.status === "DECLINED" || b.status === "EXPIRED"))) && (
               <div className="flex flex-wrap items-center gap-2">
                 {b.actions.includes("join") && b.callSlug && (
                   <ButtonLink href={`/call/${b.callSlug}`} size="sm">
@@ -258,10 +258,15 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
                     Withdraw request
                   </Button>
                 )}
-                {b.actions.includes("reschedule") && (
+                {b.actions.includes("reschedule") && b.status !== "PENDING" && (
                   <Button size="sm" variant="outline" disabled={busy === b.id} onClick={() => setRescheduling(b)}>
                     <Icon icon={CalendarClock} size="sm" /> Reschedule
                   </Button>
+                )}
+                {b.role === "requester" && (b.status === "CANCELLED" || b.status === "DECLINED" || b.status === "EXPIRED") && (
+                  <ButtonLink href={`/book/${b.expertId}`} size="sm" variant="outline">
+                    <Icon icon={CalendarClock} size="sm" /> Book a new time
+                  </ButtonLink>
                 )}
                 {b.actions.includes("cancel") && (
                   <Button size="sm" variant="danger-ghost" disabled={busy === b.id} onClick={() => setPending({ booking: b, action: "cancel" })}>
@@ -344,8 +349,29 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
       >
         {pending && (
           <div className="space-y-4">
+            {pending.booking.actions.includes("reschedule") && (
+              <div className="bg-warning-light flex flex-wrap items-center justify-between gap-3 rounded-md px-4 py-3">
+                <p className="text-small text-text-primary">
+                  {pending.action === "decline"
+                    ? `Only the time doesn’t suit? Suggest another one. If ${pending.booking.requesterName.split(" ")[0]} doesn’t take it, the request stays at the original time.`
+                    : `Need a different time instead? Suggest a new one and keep the booking${pending.booking.priceMinor > 0 ? " and payment" : ""}.`}
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const b = pending.booking;
+                    close();
+                    setRescheduling(b);
+                  }}
+                >
+                  <Icon icon={CalendarClock} size="sm" /> Reschedule instead
+                </Button>
+              </div>
+            )}
             <p className="text-small text-text-secondary">
               {(pending.booking.role === "expert" ? pending.booking.requesterName : pending.booking.expertName)} will be told, with your reason.
+              {pending.booking.role === "expert" && pending.action !== "decline" ? " They can book a new time right away." : ""}
             </p>
             <fieldset className="space-y-2">
               <legend className="text-small text-text-primary mb-1 font-semibold">Reason</legend>
