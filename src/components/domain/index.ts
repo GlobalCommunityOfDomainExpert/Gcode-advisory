@@ -10,6 +10,7 @@ export * from "./profile-header";
 export * from "./profile-kit";
 export * from "./profile-section-nav";
 export * from "./setting-row";
+export * from "./star-rating";
 export * from "./stat-strip";
 export * from "./visibility-bar";
 export * from "./visibility-tag";
