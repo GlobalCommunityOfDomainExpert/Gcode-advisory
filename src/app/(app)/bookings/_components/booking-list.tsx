@@ -53,16 +53,20 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
   const [rating, setRating] = useState<BookingView | null>(null);
   const [reporting, setReporting] = useState<BookingView | null>(null);
   const [rescheduling, setRescheduling] = useState<BookingView | null>(null);
+  // before the reason form, someone who could just move the session is offered that first (they chose to cancel: it is one click to carry on)
+  const [skipOffer, setSkipOffer] = useState(false);
   const [notice, setNotice] = useState<{ message: string; tone: "success" | "info" } | null>(null);
 
   const options = pending
     ? reasons.filter((r) => r.action === pending.action && r.actor === (pending.booking.role === "expert" ? "expert" : "requester"))
     : [];
   const chosen = options.find((r) => r.code === code);
+  const offering = !!pending && pending.booking.actions.includes("reschedule") && !skipOffer;
   const noteTooShort = !!chosen?.needsNote && note.trim().length < 5;
 
   function close() {
     setPending(null);
+    setSkipOffer(false);
     setCode("");
     setNote("");
     setError(null);
@@ -311,63 +315,74 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
       <Modal
         open={!!pending}
         onClose={close}
-        title={pending?.action === "decline" ? "Decline this request" : "Cancel this booking"}
+        title={offering ? (pending?.action === "decline" ? "Before you decline" : "Before you cancel") : pending?.action === "decline" ? "Decline this request" : "Cancel this booking"}
         footer={
-          <>
-            <Button variant="outline" size="sm" onClick={close}>
-              Keep it
-            </Button>
-            <Button variant="danger" size="sm" loading={busy !== null} disabled={!chosen || noteTooShort} onClick={submit}>
-              {pending?.action === "decline" ? "Decline request" : "Cancel booking"}
-            </Button>
-          </>
+          offering ? (
+            <>
+              <Button variant="danger-ghost" size="sm" onClick={() => setSkipOffer(true)}>
+                {pending?.action === "decline" ? "No, decline it" : "No, cancel it"}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const b = pending?.booking;
+                  close();
+                  if (b) setRescheduling(b);
+                }}
+              >
+                <Icon icon={CalendarClock} size="sm" /> Suggest a new time
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={close}>
+                Keep it
+              </Button>
+              <Button variant="danger" size="sm" loading={busy !== null} disabled={!chosen || noteTooShort} onClick={submit}>
+                {pending?.action === "decline" ? "Decline request" : "Cancel booking"}
+              </Button>
+            </>
+          )
         }
       >
         {pending && (
           <div className="space-y-4">
-            {pending.booking.actions.includes("reschedule") && (
-              <div className="bg-warning-light flex flex-wrap items-center justify-between gap-3 rounded-md px-4 py-3">
-                <p className="text-small text-text-primary">
+            {offering ? (
+              <div className="space-y-3">
+                <p className="text-body text-text-primary">Is it only the time that doesn’t work?</p>
+                <p className="text-small text-text-secondary">
                   {pending.action === "decline"
-                    ? `Only the time doesn’t suit? Suggest another one. If ${pending.booking.requesterName.split(" ")[0]} doesn’t take it, the request stays at the original time.`
-                    : `Need a different time instead? Suggest a new one and keep the booking${pending.booking.priceMinor > 0 ? " and payment" : ""}.`}
+                    ? `Suggest another time instead. If ${pending.booking.requesterName.split(" ")[0]} doesn’t take it, the request stays at the original time and you can still decide.`
+                    : `Suggest a new time and keep the booking${pending.booking.priceMinor > 0 ? " and the payment" : ""}. ${(pending.booking.role === "expert" ? pending.booking.requesterName : pending.booking.expertName).split(" ")[0]} accepts or declines, and until then the original time stands.`}
                 </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    const b = pending.booking;
-                    close();
-                    setRescheduling(b);
-                  }}
-                >
-                  <Icon icon={CalendarClock} size="sm" /> Reschedule instead
-                </Button>
               </div>
+            ) : (
+              <>
+              <p className="text-small text-text-secondary">
+                {(pending.booking.role === "expert" ? pending.booking.requesterName : pending.booking.expertName)} will be told, with your reason.
+                {pending.booking.role === "expert" && pending.action !== "decline" ? " They can book a new time right away." : ""}
+              </p>
+              <fieldset className="space-y-2">
+                <legend className="text-small text-text-primary mb-1 font-semibold">Reason</legend>
+                {options.map((r) => (
+                  <label key={r.code} className="text-body flex cursor-pointer items-center gap-2">
+                    <input type="radio" name="reason" value={r.code} checked={code === r.code} onChange={() => setCode(r.code)} className="accent-primary" />
+                    {r.label}
+                  </label>
+                ))}
+              </fieldset>
+              {chosen && (
+                <div>
+                  <label htmlFor="reason-note" className="text-small text-text-primary mb-1 block font-semibold">
+                    {chosen.needsNote ? "Add a short note" : "Add a note (optional)"}
+                  </label>
+                  <Textarea id="reason-note" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} error={noteTooShort && note.length > 0} />
+                  {chosen.needsNote && <p className="text-small text-text-secondary mt-1">At least 5 characters.</p>}
+                </div>
+              )}
+              {error && <Banner tone="danger">{error}</Banner>}
+              </>
             )}
-            <p className="text-small text-text-secondary">
-              {(pending.booking.role === "expert" ? pending.booking.requesterName : pending.booking.expertName)} will be told, with your reason.
-              {pending.booking.role === "expert" && pending.action !== "decline" ? " They can book a new time right away." : ""}
-            </p>
-            <fieldset className="space-y-2">
-              <legend className="text-small text-text-primary mb-1 font-semibold">Reason</legend>
-              {options.map((r) => (
-                <label key={r.code} className="text-body flex cursor-pointer items-center gap-2">
-                  <input type="radio" name="reason" value={r.code} checked={code === r.code} onChange={() => setCode(r.code)} className="accent-primary" />
-                  {r.label}
-                </label>
-              ))}
-            </fieldset>
-            {chosen && (
-              <div>
-                <label htmlFor="reason-note" className="text-small text-text-primary mb-1 block font-semibold">
-                  {chosen.needsNote ? "Add a short note" : "Add a note (optional)"}
-                </label>
-                <Textarea id="reason-note" rows={3} maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} error={noteTooShort && note.length > 0} />
-                {chosen.needsNote && <p className="text-small text-text-secondary mt-1">At least 5 characters.</p>}
-              </div>
-            )}
-            {error && <Banner tone="danger">{error}</Banner>}
           </div>
         )}
       </Modal>
