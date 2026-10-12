@@ -3,8 +3,8 @@ import Link from "next/link";
 
 /**
  * The page shape for "something is not as expected" (not found, error). No card and no panel: a quiet grey mark, a short heading, one
- * sentence and the actions sit directly on the page, centred. It is compact on purpose, so the page and the footer fit in a normal window
- * without scrolling, and it is not loud: people are not meant to see it often.
+ * sentence and the actions sit directly on the page, centred. It is centred in the space above the footer and compact on purpose, so the page and the
+ * footer fit in a normal window without scrolling, and it is not loud: people are not meant to see it often.
  */
 export function StatusPage({
   glyph,
@@ -23,7 +23,7 @@ export function StatusPage({
   links?: { href: string; label: string }[];
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col items-center px-4 py-8 text-center sm:py-12">
+    <div className="mx-auto flex min-h-[calc(100vh-24rem)] w-full max-w-xl flex-col items-center justify-center px-4 py-6 text-center">
       <div className="flex justify-center">{glyph}</div>
       <h1 className="text-heading text-text-primary/85 mt-5 font-semibold">{title}</h1>
       <p className="text-body text-text-secondary mx-auto mt-2 max-w-md">{description}</p>
