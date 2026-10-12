@@ -1,16 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Copy, RotateCcw, ShieldCheck } from "lucide-react";
+import { Check, Copy, RotateCcw } from "lucide-react";
 import { Button, ButtonLink, Icon } from "@/components/atoms";
 import { StatusPage } from "./status-page";
 import { ErrorGlyph } from "./status-glyph";
-
-const STEPS = [
-  "Try again. A short hiccup usually clears on its own.",
-  "If it keeps happening, go back and open the page again.",
-  "Still stuck? Reply to any GCODE email and quote the reference below.",
-];
 
 /**
  * What a person sees when a page crashes. It says plainly that nothing was lost, offers Try again (which re-fetches the page) and a way
@@ -40,14 +34,8 @@ export function ErrorScreen({ error, retry }: { error: Error & { digest?: string
     <div role="alert">
       <StatusPage
         glyph={<ErrorGlyph />}
-        reassurance="This one is on our side. Nothing you did caused it, and nothing was lost."
-        eyebrow={
-          <span className="bg-success-light text-success inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 tracking-normal normal-case">
-            <Icon icon={ShieldCheck} size="sm" className="size-3.5!" /> Your data is safe
-          </span>
-        }
         title="Something went wrong"
-        description="We couldn’t show this page. Your account, bookings and payments are all safe."
+        description="We couldn’t show this page. Your account, bookings and payments are safe."
         actions={
           <>
             <Button onClick={() => retry()}>
@@ -58,30 +46,19 @@ export function ErrorScreen({ error, retry }: { error: Error & { digest?: string
             </ButtonLink>
           </>
         }
-        footnote="Questions? Reply to any GCODE email and we’ll help."
       >
-        <div className="space-y-2">
-          <p className="text-small text-text-secondary font-bold tracking-widest uppercase">What you can do</p>
-          <ol className="space-y-2">
-            {STEPS.map((s, i) => (
-              <li key={s} className="text-small text-text-secondary flex items-start gap-3">
-                <span className="bg-primary-light text-primary grid size-5 shrink-0 place-items-center rounded-full text-xs font-bold">{i + 1}</span>
-                <span className="pt-px">{s}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-
         {error.digest && (
-          <div className="border-border-light bg-bg-subtle flex items-center justify-between gap-3 rounded-md border px-3 py-2.5">
-            <div className="min-w-0">
-              <p className="text-small text-text-secondary">Reference</p>
-              <p className="text-body text-text-primary truncate font-mono font-semibold">{error.digest}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={copy} aria-live="polite">
-              <Icon icon={copied ? Check : Copy} size="sm" /> {copied ? "Copied" : "Copy"}
-            </Button>
-          </div>
+          <p className="text-small text-text-secondary mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            If it keeps happening, reply to any GCODE email with this reference: <span className="text-text-primary font-mono font-semibold">{error.digest}</span>
+            <button
+              type="button"
+              onClick={copy}
+              aria-live="polite"
+              className="text-primary inline-flex items-center gap-1 rounded-sm font-semibold underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+            >
+              <Icon icon={copied ? Check : Copy} size="sm" className="size-3.5!" /> {copied ? "Copied" : "Copy"}
+            </button>
+          </p>
         )}
       </StatusPage>
     </div>
