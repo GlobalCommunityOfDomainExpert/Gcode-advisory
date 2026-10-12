@@ -26,9 +26,21 @@ export interface ExpertCard {
   rating?: { average: number; count: number };
 }
 
+export type DirectorySort = "relevance" | "rating" | "price";
+
+/** GET directory/filters: what the filter menus offer, each with how many published experts have it. */
+export interface DirectoryFilters {
+  expertise: { value: string; count: number }[];
+  locations: { value: string; count: number }[];
+}
+
 export interface DirectoryList {
   items: ExpertCard[];
   hasMore: boolean;
+  /** Everyone who matches the search and filters, not just this page. */
+  total: number;
+  /** How many of them can be booked now. */
+  bookable: number;
   /** false while only free sessions can be booked. */
   paymentsEnabled: boolean;
 }

@@ -6,59 +6,93 @@ import { ButtonLink } from "@/components/atoms";
 import { EmptyState, PAGE_SIZE, PageNav, pageFrom, skipFor } from "@/components/molecules";
 import { ords } from "@/lib/server/ords";
 import { getSession } from "@/lib/server/session";
-import type { DirectoryList } from "@/lib/booking/types";
-import { DirectorySearch } from "./_components/directory-search";
+import type { DirectoryFilters, DirectoryList, DirectorySort } from "@/lib/booking/types";
+import { DirectoryControls, directoryHref, type DirectoryQuery } from "./_components/directory-controls";
 import { ExpertCardView } from "./_components/expert-card";
 
 export const metadata: Metadata = { title: "Directory" };
 
-/** Domain experts: search, honest bookability, a Book button where it applies. The (app) layout guarantees a signed-in user. */
-export default async function DirectoryPage({ searchParams }: { searchParams: Promise<{ term?: string; page?: string }> }) {
+const SORTS: DirectorySort[] = ["relevance", "rating", "price"];
+
+/** A value typed into the address: no control characters, trimmed, cut to a sensible length. */
+const clean = (raw: string | undefined, max: number) => (raw ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max);
+
+/**
+ * Domain experts, laid out like the wireframe's directory without its tabs: a filter card (search and chips), a sticky toolbar (count,
+ * applied filters, Bookable now, sort) and the card grid, 25 a page. Search, filters, sort and page all live in the address. Honest
+ * bookability, and a Book button only where it applies. The (app) layout guarantees a signed-in user.
+ */
+export default async function DirectoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ term?: string; domain?: string; location?: string; bookable?: string; sort?: string; page?: string }>;
+}) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const { term: rawTerm, page: rawPage } = await searchParams;
-  const term = (rawTerm ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 40);
-  const page = pageFrom(rawPage);
+  const sp = await searchParams;
+  const query: DirectoryQuery = {
+    term: clean(sp.term, 40),
+    domain: clean(sp.domain, 100),
+    location: clean(sp.location, 100),
+    bookable: sp.bookable === "1",
+    sort: SORTS.find((s) => s === sp.sort) ?? "relevance",
+  };
+  const page = pageFrom(sp.page);
 
-  const res = await ords<DirectoryList>(
-    `/directory/experts?term=${encodeURIComponent(term)}&page_skip=${skipFor(page)}&page_len=${PAGE_SIZE}`,
-    { token: session.token },
-  );
+  const params = new URLSearchParams({ term: query.term, page_skip: String(skipFor(page)), page_len: String(PAGE_SIZE), sort: query.sort });
+  if (query.domain) params.set("domain", query.domain);
+  if (query.location) params.set("location", query.location);
+  if (query.bookable) params.set("bookable", "1");
 
-  if (res.ok && page > 1 && res.data.items.length === 0) redirect(term ? `/directory?term=${encodeURIComponent(term)}` : "/directory");
+  const [res, filters] = await Promise.all([
+    ords<DirectoryList>(`/directory/experts?${params.toString()}`, { token: session.token }),
+    ords<DirectoryFilters>("/directory/filters", { token: session.token }),
+  ]);
 
-  const href = (n: number) => `/directory?${new URLSearchParams({ ...(term ? { term } : {}), ...(n > 1 ? { page: String(n) } : {}) }).toString()}`;
+  // a page past the end (an old link, or the list just got shorter) goes back to the first page
+  if (res.ok && page > 1 && res.data.items.length === 0) redirect(directoryHref(query));
+
+  const filtered = !!(query.term || query.domain || query.location || query.bookable);
 
   return (
     <>
-      <PageHeader
-        eyebrow="Directory"
-        title="Find an expert"
-        subtitle="Book a one-to-one session with a domain expert."
-        extra={<DirectorySearch key={term} initial={term} />}
-      />
+      <PageHeader eyebrow="Directory" title="Find your people" subtitle="Learn from people who’ve done it. Book a 1:1 call with any expert who has an open service." />
       {!res.ok ? (
         <EmptyState icon={Users} title="We couldn’t load the directory" description="Please refresh the page in a moment." />
-      ) : res.data.items.length === 0 ? (
-        term ? (
-          <EmptyState
-            icon={SearchX}
-            title="No matches"
-            description={`Nobody matches “${term}”. Try a different word, or clear the search.`}
-            action={<ButtonLink href="/directory" variant="secondary" size="sm">Clear search</ButtonLink>}
-          />
-        ) : (
-          <EmptyState icon={Users} title="No experts yet" description="Experts appear here once they finish and publish their profile." />
-        )
       ) : (
         <>
-          <div className="grid gap-6 pb-6 sm:grid-cols-2 xl:grid-cols-3">
-            {res.data.items.map((e) => (
-              <ExpertCardView key={e.userId} expert={e} paymentsEnabled={res.data.paymentsEnabled} />
-            ))}
-          </div>
-          <PageNav page={page} hasMore={res.data.hasMore} href={href} label="More experts" />
+          <DirectoryControls
+            query={query}
+            filters={filters.ok ? filters.data : { expertise: [], locations: [] }}
+            total={res.data.total}
+            bookable={res.data.bookable}
+          />
+          {res.data.items.length === 0 ? (
+            filtered ? (
+              <EmptyState
+                icon={SearchX}
+                title="No matches"
+                description="Try removing a filter or searching for something broader."
+                action={
+                  <ButtonLink href="/directory" variant="secondary" size="sm">
+                    Clear filters
+                  </ButtonLink>
+                }
+              />
+            ) : (
+              <EmptyState icon={Users} title="No experts yet" description="Experts appear here once they finish and publish their profile." />
+            )
+          ) : (
+            <>
+              <div className="grid gap-6 pt-2 pb-6 sm:grid-cols-2 xl:grid-cols-3">
+                {res.data.items.map((e) => (
+                  <ExpertCardView key={e.userId} expert={e} paymentsEnabled={res.data.paymentsEnabled} />
+                ))}
+              </div>
+              <PageNav page={page} hasMore={res.data.hasMore} href={(n) => directoryHref(query, n)} label="More experts" />
+            </>
+          )}
         </>
       )}
     </>
