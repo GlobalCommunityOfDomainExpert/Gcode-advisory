@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BriefcaseBusiness, Building2, CalendarClock, CircleCheck, Contact, FolderKanban, Globe, Landmark, Lightbulb, MessageSquareText, Target, UserRound, UserRoundPen, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, BriefcaseBusiness, Building2, CalendarClock, CircleCheck, Contact, FolderKanban, Globe, Landmark, LoaderCircle, Lightbulb, MessageSquareText, Target, UserRound, UserRoundPen, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Avatar, Badge, Button } from "@/components/atoms";
 import { PageHeader } from "@/components/layout";
@@ -48,6 +48,12 @@ async function call(method: string, path: string, body?: unknown, form?: FormDat
   } catch {
     return { ok: false, status: 0, error: "Network problem. Check your connection and try again." };
   }
+}
+
+/** The app scrolls inside <main id="app-scroll-region">, not the window, so window.scrollTo does nothing here. */
+function scrollToTop() {
+  const region = document.getElementById("app-scroll-region");
+  (region ?? window).scrollTo({ top: 0, behavior: "smooth" });
 }
 
 export function ProfileEditor({ initial, initialTab, displayName, accountEmail }: { initial: ProfileDoc; initialTab: SectionId | null; displayName: string; accountEmail?: string }) {
@@ -120,6 +126,7 @@ export function ProfileEditor({ initial, initialTab, displayName, accountEmail }
     setSaving(false);
     if (!res.ok) {
       setError(res.error);
+      scrollToTop(); // the message sits at the top of the card; the Save button is at the bottom
       return false;
     }
     setDoc(res.data.profile);
@@ -128,19 +135,24 @@ export function ProfileEditor({ initial, initialTab, displayName, accountEmail }
     return true;
   }
 
+  /** Opens another tab and brings the top of the new one into view. */
+  function open(index: number) {
+    setTab(index);
+    setSaved(false);
+    scrollToTop();
+  }
+
   async function go(index: number) {
     if (index === tab) return;
-    if (await saveCurrent()) {
-      setTab(index);
-      setSaved(false);
-      window.scrollTo?.({ top: 0 });
-    }
+    if (await saveCurrent()) open(index);
   }
 
   async function saveAndContinue() {
     if (!(await saveCurrent())) return;
-    if (last) setSaved(true);
-    else setTab(tab + 1);
+    if (last) {
+      setSaved(true);
+      scrollToTop(); // show the "Profile saved" banner, even when nothing had changed
+    } else open(tab + 1);
   }
 
   async function setPublished(publish: boolean) {
@@ -149,7 +161,11 @@ export function ProfileEditor({ initial, initialTab, displayName, accountEmail }
     setError(null);
     const res = await call(publish ? "POST" : "DELETE", "/api/profile/publish", {});
     setPublishing(false);
-    if (!res.ok) return setError(res.error);
+    if (!res.ok) {
+      setError(res.error);
+      scrollToTop();
+      return;
+    }
     setDoc(res.data.profile);
     router.refresh();
   }
@@ -236,10 +252,17 @@ export function ProfileEditor({ initial, initialTab, displayName, accountEmail }
                 </span>
               </div>
 
-              <div className="space-y-5 p-6">
+              <div className="relative space-y-5 p-6" aria-busy={saving || publishing}>
+                {(saving || publishing) && (
+                  <div className="bg-surface-light/70 absolute inset-0 z-10 flex items-start justify-center rounded-b-lg pt-24 backdrop-blur-[1px]" role="status">
+                    <span className="bg-surface-light text-small text-text-primary ring-primary/10 flex items-center gap-2 rounded-full px-4 py-2 font-semibold shadow-md ring-1">
+                      <LoaderCircle className="text-primary size-4 motion-safe:animate-spin" aria-hidden="true" /> {publishing ? "Updating visibility…" : "Saving…"}
+                    </span>
+                  </div>
+                )}
                 {saved && (
                   <Banner tone="success">
-                    {live.pct === 100 ? "Profile saved. Your profile is complete." : `Profile saved. You’re ${live.pct}% complete.`}{" "}
+                    {live.pct === 100 ? (doc.published ? "Profile saved. Your profile is complete and live." : "Profile saved. Your profile is complete: publish it above to go live.") : `Profile saved. You’re ${live.pct}% complete: ${sectionsLeft} section${sectionsLeft === 1 ? "" : "s"} left before you can publish.`}{" "}
                     <Link href="/directory" className="font-bold underline underline-offset-2">
                       Go to the directory
                     </Link>
@@ -264,10 +287,32 @@ export function ProfileEditor({ initial, initialTab, displayName, accountEmail }
                 ) : (
                   <span />
                 )}
-                <Button type="button" loading={saving} onClick={saveAndContinue}>
-                  {last ? "Save profile" : "Save & continue"}
-                  {!last && <ArrowRight className="size-4" aria-hidden="true" />}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <p role="status" aria-live="polite" className="text-small flex items-center gap-1.5 font-medium">
+                    {dirty ? (
+                      <span className="text-warning flex items-center gap-1.5">
+                        <span className="bg-warning size-2 rounded-full motion-safe:animate-pulse" aria-hidden="true" /> Unsaved changes
+                      </span>
+                    ) : (
+                      last &&
+                      saved && (
+                        <span className="text-success flex items-center gap-1.5">
+                          <CircleCheck className="size-4" aria-hidden="true" /> All changes saved
+                        </span>
+                      )
+                    )}
+                  </p>
+                  {/* Nothing to save, so Save is off on every tab. Earlier tabs get a plain Next so you can still move on. */}
+                  {!last && !dirty && (
+                    <Button type="button" variant="outline" disabled={saving} onClick={() => open(tab + 1)}>
+                      Next <ArrowRight className="size-4" aria-hidden="true" />
+                    </Button>
+                  )}
+                  <Button type="button" loading={saving} disabled={!dirty} onClick={saveAndContinue} className={dirty ? "motion-safe:animate-[pulse_1.6s_ease-in-out_2]" : undefined}>
+                    {last ? (doc.published ? "Save & publish" : "Save profile") : "Save & continue"}
+                    {!last && <ArrowRight className="size-4" aria-hidden="true" />}
+                  </Button>
+                </div>
               </div>
             </section>
           </div>

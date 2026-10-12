@@ -9,7 +9,7 @@ import { DAY_LABEL, daysLeft, isPaid, newService, serviceSummary, slotsPerWeek }
 import { DAY_KEYS, type DayKey, type DayOff, type Engagement, type Service } from "@/lib/profile/types";
 import { cn } from "@/lib/cn";
 import { focusRing } from "@/lib/ui";
-import { Grid2 } from "./fields";
+import { Grid2, SearchSelect } from "./fields";
 
 export const ENGAGE_OPTS: { value: Engagement; title: string; sub: string; icon: typeof Wallet }[] = [
   { value: "paid", title: "Paid sessions", sub: "Set a rate and get booked", icon: Wallet },
@@ -18,17 +18,20 @@ export const ENGAGE_OPTS: { value: Engagement; title: string; sub: string; icon:
 ];
 
 /** Radio-style choice card used for participation and for the availability window. */
-function ChoiceCard({ selected, icon, title, sub, onSelect }: { selected: boolean; icon: typeof Wallet; title: string; sub: string; onSelect: () => void }) {
+function ChoiceCard({ selected, icon, title, sub, onSelect, disabled = false }: { selected: boolean; icon: typeof Wallet; title: string; sub: string; onSelect: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       role="radio"
       aria-checked={selected}
+      aria-disabled={disabled || undefined}
+      disabled={disabled}
       onClick={onSelect}
       className={cn(
         "flex items-start gap-3 rounded-md border-2 p-4 text-left transition-colors",
         focusRing,
-        selected ? "border-primary bg-primary-light" : "border-border-light bg-surface-light hover:border-border-hover",
+        disabled && "cursor-not-allowed opacity-60",
+        selected ? "border-primary bg-primary-light" : disabled ? "border-border-light bg-surface-light" : "border-border-light bg-surface-light hover:border-border-hover",
       )}
     >
       <IconTile icon={icon} tone={selected ? "solid" : "neutral"} />
@@ -40,12 +43,21 @@ function ChoiceCard({ selected, icon, title, sub, onSelect }: { selected: boolea
   );
 }
 
-export function EngagementChooser({ value, onChange }: { value: string; onChange: (v: Engagement) => void }) {
+/** While payments are off the paid option is shown but cannot be chosen. */
+export function EngagementChooser({ value, onChange, paymentsEnabled }: { value: string; onChange: (v: Engagement) => void; paymentsEnabled: boolean }) {
   return (
     <FormField label="How would you like to participate?" htmlFor="engage" hint="Only experts offering sessions can be booked. You can change this any time.">
       <div id="engage" role="radiogroup" aria-label="Participation" className="grid gap-3 sm:grid-cols-3">
         {ENGAGE_OPTS.map((o) => (
-          <ChoiceCard key={o.value} selected={value === o.value} icon={o.icon} title={o.title} sub={o.sub} onSelect={() => onChange(o.value)} />
+          <ChoiceCard
+            key={o.value}
+            selected={value === o.value}
+            icon={o.icon}
+            title={o.title}
+            sub={o.value === "paid" && !paymentsEnabled ? "Coming soon: free sessions for now" : o.sub}
+            disabled={o.value === "paid" && !paymentsEnabled && value !== "paid"}
+            onSelect={() => onChange(o.value)}
+          />
         ))}
       </div>
     </FormField>
@@ -139,7 +151,7 @@ function WindowBlock({ service, index, onChange }: { service: Service; index: nu
   );
 }
 
-function ServiceCard({ service, index, open, onToggle, onRemove, onChange }: { service: Service; index: number; open: boolean; onToggle: () => void; onRemove: () => void; onChange: (patch: Partial<Service>) => void }) {
+function ServiceCard({ service, index, open, paymentsEnabled, onToggle, onRemove, onChange }: { service: Service; index: number; open: boolean; paymentsEnabled: boolean; onToggle: () => void; onRemove: () => void; onChange: (patch: Partial<Service>) => void }) {
   const id = (s: string) => `svc-${index}-${s}`;
   return (
     <div className="border-border-light bg-bg-subtle rounded-md border p-5">
@@ -157,12 +169,7 @@ function ServiceCard({ service, index, open, onToggle, onRemove, onChange }: { s
       {open && (
         <div className="border-border-light mt-5 space-y-6 border-t pt-5">
           <FormField label="Service offered" htmlFor={id("type")}>
-            <Select id={id("type")} value={service.type} onChange={(e) => onChange({ type: e.target.value })}>
-              <option value="">Choose what you offer</option>
-              {SERVICE_TYPES.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </Select>
+            <SearchSelect id={id("type")} value={service.type} options={SERVICE_TYPES} placeholder="Choose what you offer" onChange={(v) => onChange({ type: v })} />
           </FormField>
           <FormField label="Your contribution" htmlFor={id("contribution")} hint="What people will get from a session with you.">
             <textarea
@@ -191,9 +198,17 @@ function ServiceCard({ service, index, open, onToggle, onRemove, onChange }: { s
               </Select>
             </FormField>
           </Grid2>
-          <FormField label="Rate per session (₹)" htmlFor={id("rate")} hint="Enter 0 for a free session. GCODE keeps 15% of paid sessions.">
-            <Input id={id("rate")} type="number" inputMode="numeric" min={0} max={100000} step={1} value={service.rate} placeholder="e.g. 1500" onChange={(e) => onChange({ rate: e.target.value.replace(/[^\d]/g, "").slice(0, 6) })} />
-          </FormField>
+          {paymentsEnabled || isPaid(service) ? (
+            <FormField
+              label="Rate per session (₹)"
+              htmlFor={id("rate")}
+              hint={paymentsEnabled ? "Enter 0 for a free session. GCODE keeps 15% of paid sessions." : "Paid sessions are paused for now. Enter 0 to offer this one for free."}
+            >
+              <Input id={id("rate")} type="number" inputMode="numeric" min={0} max={100000} step={1} value={service.rate} placeholder="e.g. 1500" onChange={(e) => onChange({ rate: e.target.value.replace(/[^\d]/g, "").slice(0, 6) })} />
+            </FormField>
+          ) : (
+            <p className="text-small text-text-secondary">This is a free session. Paid sessions are coming soon.</p>
+          )}
           <WeeklyGrid service={service} index={index} onDay={(k, patch) => onChange({ days: { ...service.days, [k]: { ...service.days[k], ...patch } } })} />
           <WindowBlock service={service} index={index} onChange={onChange} />
         </div>
@@ -256,6 +271,8 @@ export interface ServicesTabProps {
   services: Service[];
   daysOff: DayOff[];
   payoutSet: boolean;
+  /** false while only free sessions can be booked. */
+  paymentsEnabled: boolean;
   onEngagement: (e: Engagement) => void;
   onServices: (next: Service[]) => void;
   onDaysOff: (next: DayOff[]) => void;
@@ -265,7 +282,7 @@ export interface ServicesTabProps {
  * Services & availability: the one place that replaces "My services", "My calendar" and "Booking pages".
  * A service is the bookable unit: length, buffer, rate, weekly hours and a window. Days off apply to all of them.
  */
-export function ServicesTab({ engagement, services, daysOff, payoutSet, onEngagement, onServices, onDaysOff }: ServicesTabProps) {
+export function ServicesTab({ engagement, services, daysOff, payoutSet, paymentsEnabled, onEngagement, onServices, onDaysOff }: ServicesTabProps) {
   const [open, setOpen] = useState<Record<number, boolean>>({ 0: true });
   const patch = (i: number, p: Partial<Service>) => onServices(services.map((s, j) => (j === i ? { ...s, ...p } : s)));
 
@@ -275,7 +292,7 @@ export function ServicesTab({ engagement, services, daysOff, payoutSet, onEngage
         <Banner tone="info">
           You’ve chosen to join as a <b>community member</b>: you’re listed on GCODE but can’t be booked, so no services are needed.
         </Banner>
-        <Button type="button" variant="secondary" onClick={() => onEngagement("paid")}>
+        <Button type="button" variant="secondary" onClick={() => onEngagement(paymentsEnabled ? "paid" : "free")}>
           Offer sessions instead
         </Button>
       </div>
@@ -285,9 +302,14 @@ export function ServicesTab({ engagement, services, daysOff, payoutSet, onEngage
   return (
     <div className="space-y-5">
       <Banner tone="info">Each service is also bookable: people pick a time from the availability you set here. No separate booking page needed.</Banner>
-      {services.some(isPaid) && !payoutSet && (
+      {!paymentsEnabled && services.some(isPaid) && (
         <Banner tone="warning">
-          <b>Paid sessions need a payout account.</b> Until you add one, paid services stay paused. Payout setup arrives with Payouts in a later sprint; free services are unaffected.
+          <b>Paid sessions are paused for now.</b> Services with a price can’t be booked yet; set the rate to 0 to offer one for free. Your prices are kept for when paid sessions open.
+        </Banner>
+      )}
+      {paymentsEnabled && services.some(isPaid) && !payoutSet && (
+        <Banner tone="warning">
+          <b>Paid sessions need a payout account.</b> Until you add one, paid services stay paused and people cannot book them. Add it in Account settings, under Payouts. Free services are unaffected.
         </Banner>
       )}
       {services.length ? (
@@ -298,6 +320,7 @@ export function ServicesTab({ engagement, services, daysOff, payoutSet, onEngage
               service={s}
               index={i}
               open={!!open[i]}
+              paymentsEnabled={paymentsEnabled}
               onToggle={() => setOpen((o) => ({ ...o, [i]: !o[i] }))}
               onRemove={() => {
                 onServices(services.filter((_, j) => j !== i));
@@ -319,7 +342,7 @@ export function ServicesTab({ engagement, services, daysOff, payoutSet, onEngage
           className="w-full"
           onClick={() => {
             setOpen({ [services.length]: true });
-            onServices([...services, newService()]);
+            onServices([...services, newService(!paymentsEnabled)]);
           }}
         >
           + Add {services.length ? "another " : "a "}service

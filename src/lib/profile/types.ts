@@ -94,8 +94,12 @@ export interface ProfileDoc {
   daysOff: DayOff[];
   files: Partial<Record<FileKind, FileRef>>;
   published: boolean;
+  /** The public address /experts/<publicSlug>. Present while an expert's profile is published. */
+  publicSlug?: string;
   /** Does this expert have a payout account? Paid services stay paused without one. */
   payoutSet: boolean;
+  /** false while only free sessions can be booked: the editor hides prices and the paid option. */
+  paymentsEnabled: boolean;
 }
 
 export type SectionId =

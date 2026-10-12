@@ -2,12 +2,13 @@ import { DAY_KEYS, type DayKey, type Service } from "./types";
 
 export const DAY_LABEL: Record<DayKey, string> = { sun: "Sun", mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat" };
 
-export const newService = (): Service => ({
+/** A blank service. While payments are off it starts free (rate 0), so the editor never has to ask for a price. */
+export const newService = (freeOnly = false): Service => ({
   type: "",
   contribution: "",
   duration: "30 min",
   buffer: "10 min",
-  rate: "",
+  rate: freeOnly ? "0" : "",
   mode: "rolling",
   from: "",
   to: "",

@@ -115,5 +115,6 @@ export function emptyProfile(role: ProfileRole, fullName: string): ProfileDoc {
     files: {},
     published: false,
     payoutSet: false,
+    paymentsEnabled: false,
   };
 }

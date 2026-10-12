@@ -386,7 +386,9 @@ export function normalizeDoc(raw: unknown, role: ProfileRole, fallbackName: stri
     daysOff: parseDaysOff(raw.daysOff) ?? [],
     files,
     published: raw.published === true,
+    publicSlug: typeof raw.publicSlug === "string" && /^[a-z0-9-]{1,60}$/.test(raw.publicSlug) ? raw.publicSlug : undefined,
     payoutSet: raw.payoutSet === true,
+    paymentsEnabled: raw.paymentsEnabled === true,
   };
 }
 
