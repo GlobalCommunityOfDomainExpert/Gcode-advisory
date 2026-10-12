@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowRight, CalendarDays, ChevronRight, LayoutDashboard, LucideIcon, Search, UserRound, Wallet } from "lucide-react";
-import { Avatar, Badge, ButtonLink, Icon, Progress, SectionLabel } from "@/components/atoms";
+import { Badge, ButtonLink, Icon, Progress, SectionLabel } from "@/components/atoms";
 import { PageHeader } from "@/components/layout";
 import { EmptyState } from "@/components/molecules";
 import { PublishControl } from "@/components/profile-view/publish-control";
@@ -147,11 +147,10 @@ function Upcoming({ items, isExpert }: { items: BookingView[]; isExpert: boolean
                     <span className="text-primary text-[0.7rem] font-semibold tracking-wide uppercase">{d.month}</span>
                     <span className="text-large text-primary font-extrabold">{d.day}</span>
                   </span>
-                  <Avatar alt={who} sizeClassName="size-10" />
                   <span className="block min-w-0 flex-1">
-                    <span className="text-body text-text-primary block truncate font-semibold">{who}</span>
+                    <span className="text-body text-text-primary block truncate font-semibold">{b.serviceTitle}</span>
                     <span className="text-small text-text-secondary block truncate">
-                      {b.serviceTitle} · {fmtDay(b.startAt)}, {fmtTime(b.startAt)} · {b.durationMin} min
+                      {b.role === "requester" ? "with" : "requested by"} {who} · {fmtDay(b.startAt)}, {fmtTime(b.startAt)} · {b.durationMin} min
                     </span>
                   </span>
                   <span className="hidden shrink-0 sm:block">
