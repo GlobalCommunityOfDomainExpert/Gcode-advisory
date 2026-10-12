@@ -37,6 +37,7 @@ const emptyDoc = (u) => ({
   files: {},
   published: false,
   payoutSet: false,
+  paymentsEnabled: false,
 });
 
 const send = (res, status, body) => {
@@ -67,7 +68,7 @@ createServer((req, res) => {
       const u = { id, email: body.email, name: body.full_name, phone: body.phone, pwd: body.password, verified: false, role: null };
       users.set(id, u);
       byEmail.set(u.email, id);
-      return send(res, 200, `{"user_id":${id}}`); // raw big integer, like ORDS
+      return send(res, 201, { message: "OTP sent to email" }); // like AUTH_PKG: no user_id until a role is chosen
     }
     if (path === "/auth/verify-otp") {
       const u = users.get(byEmail.get(body.email));
@@ -76,9 +77,9 @@ createServer((req, res) => {
       return send(res, 200, { message: "ok" });
     }
     if (path === "/auth/select-stakeholder") {
-      const u = users.get(String(body.user_id));
-      if (!u || !u.verified || u.email !== body.email || !ROLE_KEY[body.role_name]) return err(res, "Cannot select role");
-      u.role = body.role_name;
+      const u = users.get(byEmail.get(body.email));
+      if (!u || !u.verified || !ROLE_KEY[String(body.role_name).toUpperCase()]) return err(res, "Cannot select role");
+      u.role = String(body.role_name).toUpperCase();
       profiles.set(u.id, emptyDoc(u));
       return send(res, 200, { message: "ok", token: jwt(u) });
     }

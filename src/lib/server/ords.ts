@@ -9,6 +9,8 @@ interface OrdsOptions {
   /** Body fields that must go out as JSON numbers (ids too large for a JS number are carried as strings). */
   numericFields?: string[];
   token?: string;
+  /** Extra request headers (for example the server key on the room report). */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -21,7 +23,7 @@ const BIG_ID_FIELDS = /("(?:user_id|sub)"\s*:\s*)(\d{15,})/g;
  * Calls ORDS from the server. ORDS answers 200 with `{ "error": ... }` for some failures, so both are checked.
  * `message` is for matching and logs; routes decide what the user is allowed to read.
  */
-export async function ords<T>(path: string, { method, body, numericFields = [], token }: OrdsOptions = {}): Promise<OrdsResult<T>> {
+export async function ords<T>(path: string, { method, body, numericFields = [], token, headers }: OrdsOptions = {}): Promise<OrdsResult<T>> {
   let payload = body === undefined ? undefined : JSON.stringify(body);
   for (const field of numericFields) {
     payload = payload?.replace(new RegExp(`("${field}"\\s*:\\s*)"(\\d{1,40})"`), "$1$2");
@@ -35,6 +37,7 @@ export async function ords<T>(path: string, { method, body, numericFields = [], 
         Accept: "application/json",
         ...(payload ? { "Content-Type": "application/json" } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...headers,
       },
       body: payload,
       cache: "no-store",

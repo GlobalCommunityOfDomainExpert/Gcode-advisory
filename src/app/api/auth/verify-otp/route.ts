@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   if (!code) return fail("Enter the 6-character code.");
 
   // Few guesses per account (the code is short), plus a looser per-IP cap.
-  const accountKey = `otp:uid:${ticket.uid}`;
+  const accountKey = `otp:acct:${ticket.email}`;
   const blocked = limited([
     [accountKey, 5, 10 * 60],
     [`otp:ip:${clientIp(request)}`, 30, 10 * 60],

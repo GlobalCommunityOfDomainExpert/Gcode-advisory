@@ -34,7 +34,8 @@ export async function POST(request: Request) {
   ]);
   if (blocked) return blocked;
 
-  const result = await ords<{ user_id: string | number }>("/auth/sign-up", {
+  // The backend answers { message } only: the account row is created later, when a role is chosen.
+  const result = await ords<{ message?: string }>("/auth/sign-up", {
     body: { email, full_name: fullName, phone, password: passwordForBackend(password) },
   });
 
@@ -47,9 +48,6 @@ export async function POST(request: Request) {
     return fail("Could not create your account. Please try again.", result.status === 502 ? 502 : 400);
   }
 
-  const uid = String(result.data.user_id ?? "");
-  if (!/^\d{1,40}$/.test(uid)) return fail("Could not create your account. Please try again.", 502);
-
-  await setTicket({ uid, email, stage: "created" });
+  await setTicket({ email, stage: "created" });
   return json({ ok: true });
 }

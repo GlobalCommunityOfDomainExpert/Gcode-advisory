@@ -15,12 +15,11 @@ export async function POST(request: Request) {
 
   if (!isSignUpRole(body.role)) return fail("Choose who you are.");
 
-  const blocked = limited([[`role:uid:${ticket.uid}`, 10, 10 * 60]]);
+  const blocked = limited([[`role:acct:${ticket.email}`, 10, 10 * 60]]);
   if (blocked) return blocked;
 
   const result = await ords<{ token?: string }>("/auth/select-stakeholder", {
-    body: { user_id: ticket.uid, email: ticket.email, role_name: body.role },
-    numericFields: ["user_id"],
+    body: { email: ticket.email, role_name: body.role },
   });
   if (!result.ok || !result.data.token) return fail("Could not complete setup. Please try again.", 502);
 

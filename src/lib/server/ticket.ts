@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { authSecret, isProd } from "./env";
 
 /**
- * The onboarding ticket: a short-lived, signed, httpOnly cookie that carries who is mid sign-up (user id + email)
+ * The onboarding ticket: a short-lived, signed, httpOnly cookie that carries who is mid sign-up (email, and the id once known)
  * and how far they got. It replaces the userId/email the old flow passed around in the URL and request bodies, so a
  * caller can never pick someone else's id or skip the email-code step.
  *
@@ -14,7 +14,8 @@ const TICKET_COOKIE = isProd ? "__Host-gcode_onboarding" : "gcode_onboarding";
 const TTL_SECONDS = 30 * 60;
 
 export interface Ticket {
-  uid: string;
+  /** Only present after a password sign-in. The backend's sign-up does not return an id (see AUTH_PKG.sign_up). */
+  uid?: string;
   email: string;
   stage: "created" | "verified";
 }
@@ -46,9 +47,10 @@ export async function getTicket(): Promise<Ticket | null> {
   try {
     const p = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as Payload;
     if (p.exp <= Math.floor(Date.now() / 1000)) return null;
-    if (typeof p.uid !== "string" || !/^\d{1,40}$/.test(p.uid) || typeof p.email !== "string") return null;
+    if (typeof p.email !== "string") return null;
+    if (p.uid !== undefined && (typeof p.uid !== "string" || !/^\d{1,40}$/.test(p.uid))) return null;
     if (p.stage !== "created" && p.stage !== "verified") return null;
-    return { uid: p.uid, email: p.email, stage: p.stage };
+    return { ...(p.uid ? { uid: p.uid } : {}), email: p.email, stage: p.stage };
   } catch {
     return null;
   }
