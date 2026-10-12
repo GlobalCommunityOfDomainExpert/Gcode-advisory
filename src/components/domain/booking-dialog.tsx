@@ -40,6 +40,10 @@ export interface BookingDialogProps {
   onSlotChange?: (slot: number) => void;
   onConfirm?: () => void;
   onClose?: () => void;
+  /** A problem from the last attempt, shown above the buttons. */
+  error?: string | null;
+  /** The request is in flight: the confirm button spins and is disabled. */
+  busy?: boolean;
   /** Render in place instead of a portal (previews, Storybook). */
   inline?: boolean;
 }
@@ -75,6 +79,8 @@ export function BookingDialog({
   onSlotChange,
   onConfirm,
   onClose,
+  error,
+  busy,
   inline,
 }: BookingDialogProps) {
   const titleId = useId();
@@ -186,11 +192,13 @@ export function BookingDialog({
         />
       </FormField>
 
+      {error && <Banner tone="danger">{error}</Banner>}
+
       <div className="flex flex-wrap items-center justify-end gap-3 pt-1">
         <Button variant="ghost" onClick={onClose}>
           {copy.dismiss}
         </Button>
-        <Button variant={copy.variant} onClick={onConfirm} disabled={!isBookingDialogValid(kind, reason, note, slot)}>
+        <Button variant={copy.variant} onClick={onConfirm} loading={busy} disabled={busy || !isBookingDialogValid(kind, reason, note, slot)}>
           {copy.confirm}
         </Button>
       </div>
