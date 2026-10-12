@@ -9,10 +9,10 @@ export interface SettingGroupProps {
 /** Open settings layout: label + description left, controls right, hairline between groups (no card-in-card). */
 export function SettingGroup({ title, description, children }: SettingGroupProps) {
   return (
-    <div className="border-border-light grid gap-x-12 gap-y-4 border-t py-8 first:border-t-0 first:pt-2 last:pb-0 md:grid-cols-[14rem_minmax(0,1fr)]">
+    <div className="border-border-light grid gap-x-12 gap-y-4 border-t py-6 first:border-t-0 md:py-8 first:pt-2 last:pb-0 md:grid-cols-[14rem_minmax(0,1fr)]">
       <div>
         <h3 className="text-body text-text-primary font-semibold">{title}</h3>
-        {description && <p className="text-small text-text-secondary mt-1 max-w-56">{description}</p>}
+        {description && <p className="text-small text-text-secondary mt-1 md:max-w-56">{description}</p>}
       </div>
       <div className="min-w-0 space-y-4">{children}</div>
     </div>

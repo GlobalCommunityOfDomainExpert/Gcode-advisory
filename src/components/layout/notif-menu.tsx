@@ -6,6 +6,8 @@ import { Icon } from "@/components/atoms";
 import { useDismiss } from "@/hooks/use-dismiss";
 
 export interface NotifItem {
+  /** Stable key. Falls back to the title. */
+  id?: string | number;
   icon: LucideIcon;
   tone: "primary" | "success" | "warning";
   title: string;
@@ -22,6 +24,8 @@ export interface NotifMenuProps {
   /** Render the dropdown open on first paint. */
   defaultOpen?: boolean;
   onSettingsClick?: () => void;
+  /** When given, the parent owns "read": the badge counts items still marked unread and this is called by Mark all as read. */
+  onMarkAllRead?: () => void;
 }
 
 const toneClasses: Record<NotifItem["tone"], string> = {
@@ -31,11 +35,12 @@ const toneClasses: Record<NotifItem["tone"], string> = {
 };
 
 /** The bell in the top nav: unread count badge + dropdown. Closes on outside click and Escape. */
-export function NotifMenu({ items, allRead = false, defaultOpen = false, onSettingsClick }: NotifMenuProps) {
+export function NotifMenu({ items, allRead = false, defaultOpen = false, onSettingsClick, onMarkAllRead }: NotifMenuProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [read, setRead] = useState(allRead);
   const rootRef = useRef<HTMLDivElement>(null);
-  const count = read ? 0 : items.filter((n) => n.unread).length;
+  const localRead = onMarkAllRead ? false : read;
+  const count = localRead ? 0 : items.filter((n) => n.unread).length;
 
   useDismiss(rootRef, open, () => setOpen(false));
 
@@ -67,7 +72,7 @@ export function NotifMenu({ items, allRead = false, defaultOpen = false, onSetti
             <p className="text-body text-text-primary font-semibold">Notifications</p>
             <button
               type="button"
-              onClick={() => setRead(true)}
+              onClick={() => (onMarkAllRead ? onMarkAllRead() : setRead(true))}
               className="text-small text-primary hover:text-primary-hover rounded-sm font-medium hover:underline"
             >
               Mark all as read
@@ -77,7 +82,7 @@ export function NotifMenu({ items, allRead = false, defaultOpen = false, onSetti
             {items.length ? (
               items.map((n) => (
                 <button
-                  key={n.title}
+                  key={n.id ?? n.title}
                   type="button"
                   role="menuitem"
                   onClick={() => {
@@ -94,7 +99,7 @@ export function NotifMenu({ items, allRead = false, defaultOpen = false, onSetti
                     <span className="text-small text-text-secondary block">{n.text}</span>
                     <span className="text-small text-text-secondary/70 mt-0.5 block">{n.time}</span>
                   </span>
-                  {n.unread && !read && (
+                  {n.unread && !localRead && (
                     <span className="bg-secondary mt-2 size-2 shrink-0 rounded-full" aria-label="Unread" />
                   )}
                 </button>
@@ -103,20 +108,22 @@ export function NotifMenu({ items, allRead = false, defaultOpen = false, onSetti
               <p className="text-small text-text-secondary px-4 py-10 text-center">You’re all caught up.</p>
             )}
           </div>
-          <div className="border-border-light border-t py-1">
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                onSettingsClick?.();
-                setOpen(false);
-              }}
-              className="text-small text-text-secondary hover:text-text-primary hover:bg-bg-light flex w-full items-center justify-center gap-2 px-4 py-2.5 font-medium transition-colors"
-            >
-              <Icon icon={Settings} size="sm" />
-              Notification settings
-            </button>
-          </div>
+          {onSettingsClick && (
+            <div className="border-border-light border-t py-1">
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onSettingsClick?.();
+                  setOpen(false);
+                }}
+                className="text-small text-text-secondary hover:text-text-primary hover:bg-bg-light flex w-full items-center justify-center gap-2 px-4 py-2.5 font-medium transition-colors"
+              >
+                <Icon icon={Settings} size="sm" />
+                Notification settings
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
