@@ -1,12 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FocusEvent, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CalendarCheck, ChevronDown, LayoutDashboard, LucideIcon } from "lucide-react";
 import { Icon, Progress } from "@/components/atoms";
 import { ProgressRing } from "@/components/molecules/progress-ring";
 import { focusRing } from "@/lib/ui";
+
+/** Where the rail's label tooltip goes: to the right of the hovered or focused row. */
+interface RailTip {
+  label: string;
+  x: number;
+  y: number;
+}
+type TipHandlers = (label: string) => {
+  onMouseEnter?: (e: MouseEvent<HTMLElement>) => void;
+  onMouseLeave?: () => void;
+  onFocus?: (e: FocusEvent<HTMLElement>) => void;
+  onBlur?: () => void;
+};
 
 export interface SidebarLink {
   label: string;
@@ -36,16 +49,27 @@ const defaultLinks: SidebarLink[] = [
   { label: "Bookings", href: "/bookings", icon: CalendarCheck },
 ];
 
+/** Height and fade in one move: 1fr <-> 0fr rows animate to the content's real height, which max-height cannot do. */
+function Fold({ open, children }: { open: boolean; children: ReactNode }) {
+  return (
+    <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+      <div className="overflow-hidden">{children}</div>
+    </div>
+  );
+}
+
 function SidebarGroup({
   link,
   pathname,
   onNavigate,
   compact,
+  tip,
 }: {
   link: SidebarLink;
   pathname: string;
   onNavigate?: () => void;
   compact?: boolean;
+  tip: TipHandlers;
 }) {
   const children = link.children ?? [];
   const hasActiveChild = children.some((child) => child.href === pathname);
@@ -57,14 +81,15 @@ function SidebarGroup({
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        title={compact ? link.label : undefined}
-        className={`text-large ${focusRing} flex w-full items-center gap-3.5 overflow-hidden rounded-md px-4 py-3 text-left font-medium whitespace-nowrap transition-colors hover:cursor-pointer ${
+        aria-label={compact ? link.label : undefined}
+        {...tip(link.label)}
+        className={`text-body ${focusRing} flex w-full items-center gap-3 overflow-hidden rounded-md px-[calc(1.125rem-0.5px)] py-2.5 text-left font-medium whitespace-nowrap transition-colors hover:cursor-pointer ${
           hasActiveChild
             ? "bg-primary-light text-primary font-semibold"
             : "text-text-secondary hover:bg-bg-light hover:text-text-primary"
         }`}
       >
-        {link.icon && <Icon icon={link.icon} size="md" />}
+        {link.icon && <Icon icon={link.icon} size="sm" className={`shrink-0 transition-transform duration-300 ${compact ? "scale-125" : ""}`} />}
         <span className={`flex-1 transition-opacity duration-200 ${compact ? "opacity-0" : ""}`}>{link.label}</span>
         <Icon icon={ChevronDown} size="sm" className={`transition-transform ${open ? "rotate-180" : ""} ${compact ? "opacity-0" : ""}`} />
       </button>
@@ -78,7 +103,7 @@ function SidebarGroup({
                 href={child.href}
                 onClick={onNavigate}
                 aria-current={isActive ? "page" : undefined}
-                className={`text-body ${focusRing} rounded-sm px-3 py-1.5 font-medium transition-colors ${
+                className={`text-small ${focusRing} rounded-sm px-3 py-1.5 font-medium transition-colors ${
                   isActive
                     ? "bg-primary text-white"
                     : "text-text-secondary hover:bg-bg-light hover:text-text-primary"
@@ -104,6 +129,15 @@ export function Sidebar({
 }: SidebarProps) {
   const currentPath = usePathname();
   const pathname = activeHref ?? currentPath;
+  const [railTip, setRailTip] = useState<RailTip | null>(null);
+
+  // Native title tooltips are slow and unstyled. In the rail the label shows at once, to the right of the icon. It is
+  // position: fixed because the rail clips its own overflow.
+  const show = (label: string) => (e: MouseEvent<HTMLElement> | FocusEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    setRailTip({ label, x: r.right + 10, y: r.top + r.height / 2 });
+  };
+  const tip: TipHandlers = (label) => (compact ? { onMouseEnter: show(label), onMouseLeave: () => setRailTip(null), onFocus: show(label), onBlur: () => setRailTip(null) } : {});
 
   const body = (
     <div className="flex h-full min-h-0 flex-col">
@@ -113,23 +147,35 @@ export function Sidebar({
           return (
             <div key={link.label} className="space-y-1">
               {link.groupLabel && (
-                <p
-                  aria-hidden={compact || undefined}
-                  className={`text-small text-text-secondary px-4 ${index === 0 ? "pt-1" : "pt-6"} pb-2 font-bold tracking-widest whitespace-nowrap uppercase transition-opacity duration-200 ${compact ? "opacity-0" : ""}`}
-                >
-                  {link.groupLabel}
-                </p>
+                // Expanded: the heading. Collapsed: the heading folds away and a short row of dots opens in its place (none above the first
+                // group). Both animate their height, so the rows below glide into place instead of leaving a gap or jumping.
+                <div aria-hidden={compact || undefined}>
+                  <Fold open={!compact}>
+                    <p className={`text-small text-text-secondary px-4 ${index === 0 ? "pt-0.5" : "pt-4"} pb-1.5 font-semibold tracking-wider whitespace-nowrap uppercase`}>
+                      {link.groupLabel}
+                    </p>
+                  </Fold>
+                  {index > 0 && (
+                    <Fold open={compact}>
+                      <span role="separator" className="flex justify-center gap-1 py-3">
+                        <span className="bg-primary/30 size-1 rounded-full" />
+                        <span className="bg-primary/30 size-1 rounded-full" />
+                        <span className="bg-primary/30 size-1 rounded-full" />
+                      </span>
+                    </Fold>
+                  )}
+                </div>
               )}
               {link.children ? (
-                <SidebarGroup link={link} pathname={pathname} onNavigate={onNavigate} compact={compact} />
+                <SidebarGroup link={link} pathname={pathname} onNavigate={onNavigate} compact={compact} tip={tip} />
               ) : (
                 <Link
                   href={link.href ?? "#"}
                   onClick={onNavigate}
                   aria-current={active ? "page" : undefined}
                   aria-label={compact ? link.label : undefined}
-                  title={compact ? link.label : undefined}
-                  className={`text-large ${focusRing} group relative flex items-center gap-3.5 overflow-hidden rounded-md px-4 py-3 font-medium whitespace-nowrap transition-colors ${
+                  {...tip(link.label)}
+                  className={`text-body ${focusRing} group relative flex items-center gap-3 overflow-hidden rounded-md px-[calc(1.125rem-0.5px)] py-2.5 font-medium whitespace-nowrap transition-colors ${
                     active
                       ? "bg-primary-light text-primary font-semibold"
                       : "text-text-secondary hover:bg-bg-light hover:text-text-primary"
@@ -138,7 +184,7 @@ export function Sidebar({
                   {active && (
                     <span className="bg-secondary absolute inset-y-2 left-0 w-1 rounded-full" aria-hidden="true" />
                   )}
-                  {link.icon && <Icon icon={link.icon} size="md" />}
+                  {link.icon && <Icon icon={link.icon} size="sm" className={`shrink-0 transition-transform duration-300 ${compact ? "scale-125" : ""}`} />}
                   <span className={`flex-1 transition-opacity duration-200 ${compact ? "opacity-0" : ""}`}>{link.label}</span>
                   {link.badge && (
                     <span className="bg-primary-light text-small text-primary rounded-full px-1.5 py-0.5 font-semibold">
@@ -152,6 +198,15 @@ export function Sidebar({
         })}
       </nav>
 
+      {compact && railTip && (
+        <div
+          role="tooltip"
+          style={{ top: railTip.y, left: railTip.x }}
+          className="bg-primary text-small pointer-events-none fixed z-50 -translate-y-1/2 rounded-sm px-2.5 py-1.5 font-medium whitespace-nowrap text-white shadow-lg before:absolute before:top-1/2 before:-left-1 before:size-2 before:-translate-y-1/2 before:rotate-45 before:bg-primary"
+        >
+          {railTip.label}
+        </div>
+      )}
       {profileCompletion !== undefined && profileCompletion < 100 && compact && (
         <div className="mx-auto mb-4" title={`Profile ${profileCompletion}% complete`}>
           <ProgressRing value={profileCompletion} sizeClassName="size-11" />

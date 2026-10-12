@@ -111,7 +111,7 @@ export function Navbar({
         {!guest && (
           <div className="flex items-center gap-1 sm:gap-3">
             {links.map((link) => {
-              const active = pathname === link.href;
+              const active = pathname === link.href || (pathname ?? "").startsWith(`${link.href}/`);
               return (
                 <Link
                   key={link.label}

@@ -21,6 +21,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       user={{ name: session.fullName || "Account", role: ROLE_LABEL[role], avatarSrc: photo }}
       email={session.email}
       completion={loaded?.completion.pct}
+      isExpert={role === "expert"}
     >
       {children}
     </AppFrame>

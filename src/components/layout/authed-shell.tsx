@@ -22,6 +22,8 @@ export interface AuthedShellProps {
   onRefer?: () => void;
   onLogout?: () => void;
   onNotificationSettings?: () => void;
+  /** Lets the page own "read" for the bell (see NotifMenu). */
+  onMarkAllNotificationsRead?: () => void;
   /** Force the sidebar off (or on) regardless of the route. Default: decided by `hideSidebarOn`. */
   hideSidebar?: boolean;
   /** Route prefixes that render without a sidebar: focused flows. Default: the call room and checkout. */
@@ -84,6 +86,7 @@ export function AuthedShell({
   onRefer,
   onLogout,
   onNotificationSettings,
+  onMarkAllNotificationsRead,
   hideSidebar,
   hideSidebarOn = FOCUSED_ROUTES,
   collapsible = true,
@@ -101,7 +104,7 @@ export function AuthedShell({
       navbar={
         <Navbar
           links={links}
-          notifications={<NotifMenu items={notifications} onSettingsClick={onNotificationSettings} />}
+          notifications={<NotifMenu items={notifications} onSettingsClick={onNotificationSettings} onMarkAllRead={onMarkAllNotificationsRead} />}
           accountMenu={
             <ProfileMenu
               user={user}

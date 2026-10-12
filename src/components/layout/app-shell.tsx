@@ -23,7 +23,7 @@ export function AppShell({ navbar, sidebar, sidebarCompact = false, children }: 
             {sidebar}
           </aside>
         )}
-        <main id="app-scroll-region" className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
+        <main id="app-scroll-region" className="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
           <div className="isolate mx-auto w-full max-w-7xl flex-1 px-4 pb-8 sm:px-6 lg:px-8">{children}</div>
           <Footer />
         </main>
