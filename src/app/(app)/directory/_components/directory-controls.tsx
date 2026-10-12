@@ -57,18 +57,25 @@ export function priceLabel(min: string, max: string): string {
   return `${rupee(min)}+`;
 }
 
-const PRESETS: { label: string; min: string; max: string }[] = [
-  { label: "Free", min: "0", max: "0" },
-  { label: "Under ₹500", min: "", max: "500" },
-  { label: "₹500 – ₹1,000", min: "500", max: "1000" },
-  { label: "₹1,000+", min: "1000", max: "" },
-];
+/** The slider's scale from the dearest session on offer: a round top and a step that suits it. */
+export function priceScale(maxMinor: number): { top: number; step: number } {
+  const max = Math.max(1, Math.ceil(maxMinor / 100));
+  const step = max <= 2000 ? 50 : max <= 10000 ? 100 : 500;
+  return { top: Math.max(step * 2, Math.ceil(max / step) * step), step };
+}
 
-/** The Price chip: it opens a small panel with a few common ranges and a minimum and maximum of your own. */
-function PricePicker({ min, max, onApply }: { min: string; max: string; onApply: (min: string, max: string) => void }) {
+/**
+ * The Price chip: it opens a panel with a two-handled slider. The handles can't cross and always keep a minimum range between them. Nothing to
+ * press: the filter applies when a handle is let go. The lowest handle at the start and the highest at the end mean "no limit" on that
+ * side, so the address only carries a limit you actually set.
+ */
+function PricePicker({ min, max, top, step, onApply }: { min: string; max: string; top: number; step: number; onApply: (min: string, max: string) => void }) {
   const [open, setOpen] = useState(false);
-  const [lo, setLo] = useState(min);
-  const [hi, setHi] = useState(max);
+  const clamp = (n: number) => Math.min(top, Math.max(0, n));
+  // the handles always keep this much between them (about 8% of the scale, in whole steps), so the range never collapses to one price
+  const gap = Math.max(step, Math.ceil((top * 0.08) / step) * step);
+  const fromQuery = () => ({ lo: clamp(min ? Number(min) : 0), hi: clamp(max ? Number(max) : top) });
+  const [{ lo, hi }, setRange] = useState(fromQuery);
   const box = useRef<HTMLDivElement>(null);
   const active = !!(min || max);
 
@@ -87,21 +94,13 @@ function PricePicker({ min, max, onApply }: { min: string; max: string; onApply:
   }, [open]);
 
   function toggle() {
-    if (!open) {
-      setLo(min);
-      setHi(max);
-    }
+    if (!open) setRange(fromQuery());
     setOpen(!open);
   }
 
-  function apply(a: string, b: string) {
-    // a maximum below the minimum is the same range typed the other way round
-    const [x, y] = a && b && Number(a) > Number(b) ? [b, a] : [a, b];
-    setOpen(false);
-    onApply(x, y);
-  }
-
-  const digits = (v: string) => v.replace(/\D/g, "").slice(0, 7);
+  // let go of a handle: apply (an end of the scale means no limit on that side)
+  const commit = () => onApply(lo <= 0 ? "" : String(lo), hi >= top ? "" : String(hi));
+  const pct = (n: number) => `${(n / top) * 100}%`;
 
   return (
     <div ref={box} className="relative">
@@ -116,36 +115,57 @@ function PricePicker({ min, max, onApply }: { min: string; max: string; onApply:
         <Icon icon={ChevronDown} size="sm" className="size-4!" />
       </button>
       {open && (
-        <div role="dialog" aria-label="Price range" className="border-border-light bg-surface-light absolute top-full left-0 z-30 mt-2 w-72 rounded-md border p-4 shadow-lg">
-          <p className="text-small text-text-secondary mb-2 font-semibold">Price per session</p>
-          <div className="flex flex-wrap gap-2">
-            {PRESETS.map((p) => {
-              const on = p.min === min && p.max === max;
-              return (
-                <button key={p.label} type="button" onClick={() => apply(p.min, p.max)} className={`focus-visible:ring-primary ${chip} focus-visible:ring-2 focus-visible:outline-none ${on ? chipOn : chipOff}`}>
-                  {p.label}
-                </button>
-              );
-            })}
+        <div role="dialog" aria-label="Price range" className="border-border-light bg-surface-light absolute top-full left-0 z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-md border p-5 shadow-lg">
+          <div className="flex items-baseline justify-between">
+            <p className="text-small text-text-secondary font-semibold">Price per session</p>
+            <p className="text-body text-text-primary font-semibold tabular-nums" aria-live="polite">
+              {rupee(String(lo))} – {rupee(String(hi))}
+              {hi >= top ? "+" : ""}
+            </p>
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <label className="text-small text-text-secondary block">
-              Minimum (₹)
-              <input inputMode="numeric" value={lo} onChange={(e) => setLo(digits(e.target.value))} placeholder="0" className="border-border-light bg-surface-light text-body text-text-primary focus-visible:ring-primary mt-1 h-10 w-full rounded-sm border px-3 focus-visible:ring-2 focus-visible:outline-none" />
-            </label>
-            <label className="text-small text-text-secondary block">
-              Maximum (₹)
-              <input inputMode="numeric" value={hi} onChange={(e) => setHi(digits(e.target.value))} placeholder="Any" className="border-border-light bg-surface-light text-body text-text-primary focus-visible:ring-primary mt-1 h-10 w-full rounded-sm border px-3 focus-visible:ring-2 focus-visible:outline-none" />
-            </label>
+          <div className="dual-range relative mt-5 mb-1 h-6">
+            <div className="bg-bg-light absolute top-1/2 right-0 left-0 h-1.5 -translate-y-1/2 rounded-full" />
+            <div className="bg-secondary absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full" style={{ left: pct(lo), right: `calc(100% - ${pct(hi)})` }} />
+            <input
+              type="range"
+              aria-label="Lowest price"
+              min={0}
+              max={top}
+              step={step}
+              value={lo}
+              onChange={(e) => setRange({ lo: Math.min(Number(e.target.value), hi - gap), hi })}
+              onPointerUp={commit}
+              onKeyUp={commit}
+            />
+            <input
+              type="range"
+              aria-label="Highest price"
+              min={0}
+              max={top}
+              step={step}
+              value={hi}
+              onChange={(e) => setRange({ lo, hi: Math.max(Number(e.target.value), lo + gap) })}
+              onPointerUp={commit}
+              onKeyUp={commit}
+            />
           </div>
-          <div className="mt-4 flex items-center justify-between">
-            <button type="button" onClick={() => apply("", "")} className="text-small text-text-secondary hover:text-text-primary focus-visible:ring-primary rounded-sm font-medium underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none">
-              Clear
+          <div className="text-small text-text-secondary mt-1 flex justify-between tabular-nums">
+            <span>{rupee("0")}</span>
+            <span>{rupee(String(top))}+</span>
+          </div>
+          {active && (
+            <button
+              type="button"
+              onClick={() => {
+                setRange({ lo: 0, hi: top });
+                setOpen(false);
+                onApply("", "");
+              }}
+              className="text-small text-text-secondary hover:text-text-primary focus-visible:ring-primary mt-3 rounded-sm font-medium underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+            >
+              Clear price
             </button>
-            <button type="button" onClick={() => apply(lo, hi)} className="bg-primary text-small hover:bg-primary-hover focus-visible:ring-primary rounded-sm px-4 py-2 font-bold text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none">
-              Apply
-            </button>
-          </div>
+          )}
         </div>
       )}
     </div>
@@ -209,7 +229,7 @@ export function DirectoryControls({ query, filters, total, bookable }: { query: 
         <div className="flex flex-wrap gap-2">
           <PillSelect label="Expertise" value={query.domain} allLabel="All expertise" options={filters.expertise.map((o) => ({ value: o.value, label: `${o.value} (${o.count})`, short: o.value }))} onChange={(v) => go({ domain: v })} />
           <PillSelect label="Service" value={query.service} allLabel="All services" options={filters.services.map((o) => ({ value: o.value, label: `${o.value} (${o.count})`, short: o.value }))} onChange={(v) => go({ service: v })} />
-          {filters.paymentsEnabled && filters.maxPriceMinor > 0 && <PricePicker min={query.priceMin} max={query.priceMax} onApply={(a, b) => go({ priceMin: a, priceMax: b })} />}
+          {filters.paymentsEnabled && filters.maxPriceMinor > 0 && <PricePicker min={query.priceMin} max={query.priceMax} {...priceScale(filters.maxPriceMinor)} onApply={(a, b) => go({ priceMin: a, priceMax: b })} />}
           <PillSelect label="Location" value={query.location} allLabel="All locations" options={filters.locations.map((o) => ({ value: o.value, label: `${o.value} (${o.count})`, short: o.value }))} onChange={(v) => go({ location: v })} />
         </div>
       </div>

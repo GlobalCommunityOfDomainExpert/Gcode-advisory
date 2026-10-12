@@ -99,3 +99,55 @@
 @utility animate-menu-in {
   animation: menu-in 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
+
+/* The price filter's two-handled slider: two native range inputs laid over one track. Only the handles take the pointer, so each can be
+   dragged (and moved with the arrow keys) on its own. */
+.dual-range input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+.dual-range input[type="range"]:focus {
+  outline: none;
+}
+.dual-range input[type="range"]::-webkit-slider-runnable-track {
+  appearance: none;
+  background: transparent;
+}
+.dual-range input[type="range"]::-moz-range-track {
+  background: transparent;
+}
+.dual-range input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  pointer-events: auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: var(--color-surface-light, #fff);
+  border: 2px solid var(--color-secondary);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  cursor: grab;
+}
+.dual-range input[type="range"]::-moz-range-thumb {
+  pointer-events: auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: var(--color-surface-light, #fff);
+  border: 2px solid var(--color-secondary);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  cursor: grab;
+}
+.dual-range input[type="range"]:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.dual-range input[type="range"]:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
