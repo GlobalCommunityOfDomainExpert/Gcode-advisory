@@ -152,7 +152,7 @@ export default async function PayoutsPage({ searchParams }: { searchParams: Prom
               </ButtonLink>
             </div>
             <ol className="text-small text-text-secondary mt-6 grid gap-3 sm:grid-cols-3">
-              {["Add a bank account or UPI id in Account settings → Payouts", "Earnings are paid out every Monday", "GCODE keeps 15% of paid sessions"].map((t, i) => (
+              {["Add a bank account or UPI id in Account settings → Payouts", "Each session’s money is released a week after it, then paid out every Monday", "GCODE keeps 15% of paid sessions"].map((t, i) => (
                 <li key={t} className="bg-bg-subtle border-border-light flex items-start gap-3 rounded-md border p-4">
                   <span className="bg-primary-light text-primary grid size-6 shrink-0 place-items-center rounded-full font-bold">{i + 1}</span>
                   {t}
@@ -251,6 +251,7 @@ export default async function PayoutsPage({ searchParams }: { searchParams: Prom
                           <td className="text-text-primary px-5 py-3.5 text-right font-semibold tabular-nums">{rupees(r.netMinor)}</td>
                           <td className="px-5 py-3.5">
                             <Badge tone={tone}>{label}</Badge>
+                            {r.status === "pending" && r.releasesOn && <p className="text-small text-text-secondary mt-1">Releases {fmtDay(r.releasesOn)}</p>}
                           </td>
                         </tr>
                       );
