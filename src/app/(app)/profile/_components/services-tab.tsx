@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarClock, CalendarOff, CalendarRange, ChevronDown, ChevronUp, HeartHandshake, RefreshCw, Users, Wallet } from "lucide-react";
+import { CalendarClock, CalendarOff, CalendarRange, ChevronDown, ChevronUp, Copy, HeartHandshake, RefreshCw, Users, Wallet } from "lucide-react";
 import { Button, Checkbox, Input, Label, RemoveIconButton, Select } from "@/components/atoms";
 import { Banner, EmptyState, FormField, IconTile } from "@/components/molecules";
 import { BUFFERS, DURATIONS, SERVICE_TYPES, TIME_OPTS } from "@/lib/profile/options";
@@ -64,7 +64,7 @@ export function EngagementChooser({ value, onChange, paymentsEnabled }: { value:
   );
 }
 
-function WeeklyGrid({ service, index, onDay }: { service: Service; index: number; onDay: (k: DayKey, patch: Partial<Service["days"][DayKey]>) => void }) {
+function WeeklyGrid({ service, index, onDay, onCopy }: { service: Service; index: number; onDay: (k: DayKey, patch: Partial<Service["days"][DayKey]>) => void; onCopy: (from: DayKey, to: DayKey) => void }) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -72,8 +72,9 @@ function WeeklyGrid({ service, index, onDay }: { service: Service; index: number
         <span className="text-small text-text-secondary">≈ {slotsPerWeek(service)} bookable slots per week</span>
       </div>
       <div className="border-border-light bg-surface-light divide-border-light divide-y rounded-md border">
-        {DAY_KEYS.map((k) => {
+        {DAY_KEYS.map((k, i) => {
           const d = service.days[k];
+          const next = DAY_KEYS[i + 1];
           return (
             <div key={k} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
               <div className="w-20">
@@ -96,7 +97,13 @@ function WeeklyGrid({ service, index, onDay }: { service: Service; index: number
                       ))}
                     </Select>
                   </div>
-                  {d.e <= d.s && <span className="text-small text-danger">End must be after start</span>}
+                  {d.e <= d.s ? (
+                    <span className="text-small text-danger">End must be after start</span>
+                  ) : next ? (
+                    <button type="button" onClick={() => onCopy(k, next)} className={cn("text-small text-primary ml-auto inline-flex items-center gap-1.5 rounded-sm font-medium underline-offset-2 hover:underline", focusRing)}>
+                      <Copy className="size-3.5" aria-hidden="true" /> Copy to {DAY_LABEL[next]}
+                    </button>
+                  ) : null}
                 </>
               ) : (
                 <span className="text-small text-text-secondary">Unavailable</span>
@@ -209,7 +216,12 @@ function ServiceCard({ service, index, open, paymentsEnabled, onToggle, onRemove
           ) : (
             <p className="text-small text-text-secondary">This is a free session. Paid sessions are coming soon.</p>
           )}
-          <WeeklyGrid service={service} index={index} onDay={(k, patch) => onChange({ days: { ...service.days, [k]: { ...service.days[k], ...patch } } })} />
+          <WeeklyGrid
+            service={service}
+            index={index}
+            onDay={(k, patch) => onChange({ days: { ...service.days, [k]: { ...service.days[k], ...patch } } })}
+            onCopy={(from, to) => onChange({ days: { ...service.days, [to]: { ...service.days[to], on: true, s: service.days[from].s, e: service.days[from].e } } })}
+          />
           <WindowBlock service={service} index={index} onChange={onChange} />
         </div>
       )}

@@ -40,8 +40,8 @@ export const STARTUP_STAGES = ["Idea", "Prototype / MVP", "Early revenue", "Grow
 export const FUNDING_STATUS = ["Bootstrapped", "Pre-seed", "Seed", "Series A", "Series B+"];
 export const INSTITUTE_TYPES = ["University", "College", "School", "Research institute", "Training academy", "Other"];
 
-/** 30-minute steps, 07:00 to 21:00. */
-export const TIME_OPTS = Array.from({ length: 29 }, (_, i) => {
-  const m = 7 * 60 + i * 30;
+/** 30-minute steps, round the clock: 00:00 to 23:30. */
+export const TIME_OPTS = Array.from({ length: 48 }, (_, i) => {
+  const m = i * 30;
   return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 });
