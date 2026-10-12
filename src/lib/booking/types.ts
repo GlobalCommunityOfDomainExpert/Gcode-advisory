@@ -32,6 +32,12 @@ export type DirectorySort = "relevance" | "rating" | "price";
 export interface DirectoryFilters {
   expertise: { value: string; count: number }[];
   locations: { value: string; count: number }[];
+  /** The kinds of session experts offer, each with how many experts offer it. */
+  services: { value: string; count: number }[];
+  /** The dearest session on offer, in paise (0 while everything is free). */
+  maxPriceMinor: number;
+  /** false while only free sessions can be booked: there is no price to filter by. */
+  paymentsEnabled: boolean;
 }
 
 export interface DirectoryList {

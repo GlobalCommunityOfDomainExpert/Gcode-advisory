@@ -25,7 +25,7 @@ const clean = (raw: string | undefined, max: number) => (raw ?? "").replace(/[\u
 export default async function DirectoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ term?: string; domain?: string; location?: string; bookable?: string; sort?: string; page?: string }>;
+  searchParams: Promise<{ term?: string; domain?: string; location?: string; service?: string; price_min?: string; price_max?: string; bookable?: string; sort?: string; page?: string }>;
 }) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
@@ -35,6 +35,9 @@ export default async function DirectoryPage({
     term: clean(sp.term, 40),
     domain: clean(sp.domain, 100),
     location: clean(sp.location, 100),
+    service: clean(sp.service, 100),
+    priceMin: /^\d{1,7}$/.test(sp.price_min ?? "") ? String(Number(sp.price_min)) : "",
+    priceMax: /^\d{1,7}$/.test(sp.price_max ?? "") ? String(Number(sp.price_max)) : "",
     bookable: sp.bookable === "1",
     sort: SORTS.find((s) => s === sp.sort) ?? "relevance",
   };
@@ -43,6 +46,9 @@ export default async function DirectoryPage({
   const params = new URLSearchParams({ term: query.term, page_skip: String(skipFor(page)), page_len: String(PAGE_SIZE), sort: query.sort });
   if (query.domain) params.set("domain", query.domain);
   if (query.location) params.set("location", query.location);
+  if (query.service) params.set("service", query.service);
+  if (query.priceMin) params.set("price_min", query.priceMin);
+  if (query.priceMax) params.set("price_max", query.priceMax);
   if (query.bookable) params.set("bookable", "1");
 
   const [res, filters] = await Promise.all([
@@ -53,7 +59,7 @@ export default async function DirectoryPage({
   // a page past the end (an old link, or the list just got shorter) goes back to the first page
   if (res.ok && page > 1 && res.data.items.length === 0) redirect(directoryHref(query));
 
-  const filtered = !!(query.term || query.domain || query.location || query.bookable);
+  const filtered = !!(query.term || query.domain || query.location || query.service || query.priceMin || query.priceMax || query.bookable);
 
   return (
     <>
@@ -64,7 +70,7 @@ export default async function DirectoryPage({
         <>
           <DirectoryControls
             query={query}
-            filters={filters.ok ? filters.data : { expertise: [], locations: [] }}
+            filters={filters.ok ? filters.data : { expertise: [], locations: [], services: [], maxPriceMinor: 0, paymentsEnabled: false }}
             total={res.data.total}
             bookable={res.data.bookable}
           />
