@@ -349,7 +349,7 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
                 <p className="text-small text-text-secondary">
                   {pending.action === "decline"
                     ? `Suggest another time instead. If ${pending.booking.requesterName.split(" ")[0]} doesn’t take it, the request stays at the original time and you can still decide.`
-                    : `Suggest a new time and keep the booking${pending.booking.priceMinor > 0 ? " and the payment" : ""}. ${(pending.booking.role === "expert" ? pending.booking.requesterName : pending.booking.expertName).split(" ")[0]} accepts or declines, and until then the original time stands.`}
+                    : `Suggest a new time and keep the booking${pending.booking.priceMinor > 0 ? " and the payment" : ""}. ${(pending.booking.role === "expert" ? pending.booking.requesterName : pending.booking.expertName).split(" ")[0]} accepts or declines, and until then the original time stands.${pending.booking.status === "PENDING" ? " If they accept, the session is confirmed at the new time." : ""}`}
                 </p>
               </div>
             ) : (
