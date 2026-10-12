@@ -235,7 +235,7 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
                   </Button>
                 )}
                 {b.actions.includes("reschedule") && b.status !== "PENDING" && (
-                  <Button size="sm" variant="outline" disabled={busy === b.id} onClick={() => setRescheduling(b)}>
+                  <Button size="sm" variant="ghost" disabled={busy === b.id} onClick={() => setRescheduling(b)}>
                     <Icon icon={CalendarClock} size="sm" /> Reschedule
                   </Button>
                 )}
