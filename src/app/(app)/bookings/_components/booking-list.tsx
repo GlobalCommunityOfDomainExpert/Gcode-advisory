@@ -12,7 +12,7 @@ import { Toast } from "@/components/layout";
 import { RateDialog, ReportDialog } from "./feedback-dialogs";
 import { RescheduleDialog } from "./reschedule-dialog";
 import { actOnBooking, answerReschedule } from "@/lib/booking/client";
-import { dateColumn, fmtDay, fmtTime, rupees } from "@/lib/booking/time";
+import { dateColumn, fmtDay, fmtTime, isToday, rupees } from "@/lib/booking/time";
 import { statusText, STATUS_TONE } from "@/lib/booking/status";
 import type { BookingAction, BookingReason, BookingStatus, BookingView } from "@/lib/booking/types";
 
@@ -195,7 +195,7 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
             {(b.actions.length > 0 || (b.role === "requester" && (b.status === "CANCELLED" || b.status === "DECLINED" || b.status === "EXPIRED"))) && (
               <div className="flex flex-wrap items-center gap-2">
                 {b.actions.includes("join") && b.callSlug && (
-                  <ButtonLink href={`/call/${b.callSlug}`} size="sm">
+                  <ButtonLink href={`/call/${b.callSlug}`} size="sm" variant={isToday(b.startAt) ? "primary" : "secondary"}>
                     Join call
                   </ButtonLink>
                 )}

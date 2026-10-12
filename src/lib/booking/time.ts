@@ -40,6 +40,12 @@ export function dateColumn(value: string): { weekday: string; day: string; month
   return { weekday: get("weekday"), day: get("day"), month: get("month") };
 }
 
+/** Is this time on today's date in India? */
+export function isToday(value: string, now: Date = new Date()): boolean {
+  const day = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: IST }).format(d);
+  return day(toDate(value)) === day(now);
+}
+
 export function fmtDayLong(value: string): string {
   return longDayFmt.format(toDate(value));
 }
