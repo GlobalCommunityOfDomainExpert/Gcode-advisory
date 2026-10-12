@@ -238,11 +238,7 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
                     Withdraw request
                   </Button>
                 )}
-                {b.actions.includes("reschedule") && b.status !== "PENDING" && (
-                  <Button size="sm" variant="ghost" disabled={busy === b.id} onClick={() => setRescheduling(b)}>
-                    <Icon icon={CalendarClock} size="sm" /> Reschedule
-                  </Button>
-                )}
+                {/* Rescheduling is offered inside Cancel and Decline, so it is for people who really need it, not a casual button on every card */}
                 {b.role === "requester" && (b.status === "CANCELLED" || b.status === "DECLINED" || b.status === "EXPIRED") && (
                   <ButtonLink href={`/book/${b.expertId}`} size="sm" variant="outline">
                     <Icon icon={CalendarClock} size="sm" /> Book a new time
