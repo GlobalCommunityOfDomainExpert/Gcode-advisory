@@ -197,7 +197,7 @@ export default async function DashboardPage() {
 
   const [profile, upcoming, earnings] = await Promise.all([
     loadProfile({ session, role }),
-    ords<BookingList>("/bookings/me?tab=upcoming", { token: session.token }),
+    ords<BookingList>("/bookings/me?tab=upcoming&page_len=100", { token: session.token }),
     isExpert ? ords<Earnings>("/payouts/earnings", { token: session.token }) : Promise.resolve(null),
   ]);
   if (!profile) return <EmptyState icon={LayoutDashboard} title="We couldn’t load your dashboard" description="Please refresh the page in a moment." />;

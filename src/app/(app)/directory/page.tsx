@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SearchX, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout";
 import { ButtonLink } from "@/components/atoms";
-import { EmptyState } from "@/components/molecules";
+import { EmptyState, PAGE_SIZE, PageNav, pageFrom, skipFor } from "@/components/molecules";
 import { ords } from "@/lib/server/ords";
 import { getSession } from "@/lib/server/session";
 import type { DirectoryList } from "@/lib/booking/types";
@@ -13,23 +12,23 @@ import { ExpertCardView } from "./_components/expert-card";
 
 export const metadata: Metadata = { title: "Directory" };
 
-const PAGE = 12;
-
 /** Domain experts: search, honest bookability, a Book button where it applies. The (app) layout guarantees a signed-in user. */
-export default async function DirectoryPage({ searchParams }: { searchParams: Promise<{ term?: string; skip?: string }> }) {
+export default async function DirectoryPage({ searchParams }: { searchParams: Promise<{ term?: string; page?: string }> }) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const { term: rawTerm, skip: rawSkip } = await searchParams;
+  const { term: rawTerm, page: rawPage } = await searchParams;
   const term = (rawTerm ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 40);
-  const skip = /^\d{1,5}$/.test(rawSkip ?? "") ? Number(rawSkip) : 0;
+  const page = pageFrom(rawPage);
 
   const res = await ords<DirectoryList>(
-    `/directory/experts?term=${encodeURIComponent(term)}&page_skip=${skip}&page_len=${PAGE}`,
+    `/directory/experts?term=${encodeURIComponent(term)}&page_skip=${skipFor(page)}&page_len=${PAGE_SIZE}`,
     { token: session.token },
   );
 
-  const href = (n: number) => `/directory?${new URLSearchParams({ ...(term ? { term } : {}), ...(n > 0 ? { skip: String(n) } : {}) }).toString()}`;
+  if (res.ok && page > 1 && res.data.items.length === 0) redirect(term ? `/directory?term=${encodeURIComponent(term)}` : "/directory");
+
+  const href = (n: number) => `/directory?${new URLSearchParams({ ...(term ? { term } : {}), ...(n > 1 ? { page: String(n) } : {}) }).toString()}`;
 
   return (
     <>
@@ -59,22 +58,7 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Pr
               <ExpertCardView key={e.userId} expert={e} paymentsEnabled={res.data.paymentsEnabled} />
             ))}
           </div>
-          {(skip > 0 || res.data.hasMore) && (
-            <nav aria-label="More experts" className="flex items-center justify-between gap-3 pb-8">
-              {skip > 0 ? (
-                <Link href={href(Math.max(0, skip - PAGE))} className="text-primary text-body font-bold underline underline-offset-2">
-                  Previous
-                </Link>
-              ) : (
-                <span />
-              )}
-              {res.data.hasMore && (
-                <Link href={href(skip + PAGE)} className="text-primary text-body font-bold underline underline-offset-2">
-                  Next
-                </Link>
-              )}
-            </nav>
-          )}
+          <PageNav page={page} hasMore={res.data.hasMore} href={href} label="More experts" />
         </>
       )}
     </>

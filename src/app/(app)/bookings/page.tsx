@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { CalendarClock } from "lucide-react";
 import { PageHeader } from "@/components/layout";
 import { ButtonLink } from "@/components/atoms";
-import { Banner, EmptyState } from "@/components/molecules";
+import { Banner, EmptyState, PAGE_SIZE, PageNav, pageFrom, skipFor } from "@/components/molecules";
 import { ords } from "@/lib/server/ords";
 import { getSession } from "@/lib/server/session";
 import { BOOKING_TABS, type BookingList as BookingListData, type BookingReason, type BookingTab } from "@/lib/booking/types";
@@ -13,17 +13,20 @@ import { BookingTabs } from "./_components/booking-tabs";
 export const metadata: Metadata = { title: "My bookings" };
 
 /** Sessions you booked and requests you received, in three tabs. The backend decides which buttons each booking shows. */
-export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ tab?: string; page?: string }> }) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, page: rawPage } = await searchParams;
+  const page = pageFrom(rawPage);
   const tab: BookingTab = BOOKING_TABS.find((t) => t === rawTab) ?? "upcoming";
 
   const [res, reasons] = await Promise.all([
-    ords<BookingListData>(`/bookings/me?tab=${tab}`, { token: session.token }),
+    ords<BookingListData>(`/bookings/me?tab=${tab}&page_skip=${skipFor(page)}&page_len=${PAGE_SIZE}`, { token: session.token }),
     ords<BookingReason[]>("/bookings/reasons", { token: session.token }),
   ]);
+  // a page past the end (an old link, or the last card was just removed) goes back to the first page
+  if (res.ok && page > 1 && res.data.items.length === 0) redirect(`/bookings?tab=${tab}`);
   const isExpert = session.roleName === "EXPERT";
 
   return (
@@ -63,6 +66,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             </div>
           )}
           <BookingList items={res.data.items} reasons={reasons.ok ? reasons.data : []} grouped={tab === "upcoming"} />
+          <PageNav page={page} hasMore={!!res.data.hasMore} href={(n) => `/bookings?tab=${tab}${n > 1 ? `&page=${n}` : ""}`} label="More bookings" />
         </div>
       )}
     </>

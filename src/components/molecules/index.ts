@@ -10,6 +10,7 @@ export * from "./form-section-heading";
 export * from "./icon-tile";
 export * from "./modal";
 export * from "./not-found-state";
+export * from "./page-nav";
 export * from "./pagination";
 export * from "./password-strength-meter";
 export * from "./progress-ring";

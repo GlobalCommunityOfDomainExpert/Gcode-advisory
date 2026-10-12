@@ -183,6 +183,8 @@ export interface BookingList {
   items: BookingView[];
   counts: Record<BookingTab, number>;
   tab: BookingTab;
+  /** There is a next page (25 bookings a page). */
+  hasMore?: boolean;
 }
 
 /** One line of the decline / cancel pick list. */
