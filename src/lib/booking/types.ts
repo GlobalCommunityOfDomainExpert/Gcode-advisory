@@ -218,6 +218,15 @@ export const STATUS_LABEL: Record<BookingStatus, string> = {
   ABANDONED: "Not paid",
 };
 
+/** POST /bookings/:id/extend and GET /bookings/call/:slug/clock: the session's current end (db/E1-01-extend.sql). */
+export interface CallClockInfo {
+  endAt: string;
+  /** Minutes the expert has added so far (0, 15 or 30). */
+  extendedMin: number;
+  /** This person is the expert and may add 15 more minutes right now. */
+  canExtend: boolean;
+}
+
 /** GET /bookings/:id/join: whether the call is open for this person (db/F2-01-meeting.sql). `url` only for the LOCAL provider. */
 export interface JoinInfo {
   bookingId: number;
@@ -258,7 +267,7 @@ export interface Receipt {
   /** PAID, REFUND_PENDING (money on its way back) or REFUNDED. */
   status: "PAID" | "REFUND_PENDING" | "REFUNDED";
   refund?: { amountMinor: number; status: "IN_PROGRESS" | "DONE"; reason: string; reasonLabel: string; dueBy: string; creditedAt: string | null };
-  earning?: { feePct: number; feeMinor: number; netMinor: number; settlement: "HELD" | "RELEASED" | "REFUNDED" };
+  earning?: { feePct: number; feeMinor: number; netMinor: number; settlement: "HELD" | "RELEASED" | "REFUNDED"; releasesOn?: string; holdDays?: number };
 }
 
 /** GET payouts/account. The account number never comes back in full. */
@@ -273,7 +282,7 @@ export interface PayoutAccount {
   ifsc?: string | null;
 }
 
-/** pending = in escrow until the session happens, available = released and not yet sent, paid = covered by a payout. */
+/** pending = in escrow until the session happens and for a week after it, available = released and not yet sent, paid = covered by a payout. */
 export type EarningStatus = "pending" | "available" | "paid";
 
 export interface EarningRow {
@@ -285,6 +294,8 @@ export interface EarningRow {
   feeMinor: number;
   netMinor: number;
   status: EarningStatus;
+  /** For a completed session still in escrow: when it is released (one week after the session). */
+  releasesOn?: string;
 }
 
 export type PayoutStatus = "REQUESTED" | "PROCESSING" | "PAID" | "FAILED";

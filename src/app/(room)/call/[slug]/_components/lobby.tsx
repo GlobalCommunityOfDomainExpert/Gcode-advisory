@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowLeft, Mic, MicOff, Video, VideoOff } from "lucide-react";
 import { Button, ButtonLink } from "@/components/atoms";
 import { RoomFrame } from "./room-frame";
 import { RoundButton } from "./round-button";
 import { SelfView } from "./self-view";
 import { useLocalMedia } from "@/lib/booking/use-local-media";
+import { mmss, useCallClock } from "@/lib/booking/use-call-clock";
+import { EndWarning, ExtendButton, ExtendedNote } from "./end-warning";
 import type { CallLink } from "@/lib/server/meeting";
 
 const UNAVAILABLE: Record<string, string> = {
@@ -22,6 +25,9 @@ export function Lobby({
   title,
   who,
   when,
+  endAt,
+  slug,
+  bookingId,
   name,
   backHref,
   call,
@@ -29,12 +35,50 @@ export function Lobby({
   title: string;
   who: string;
   when: string;
+  /** The scheduled end (ISO), for the countdown and the five-minute warning. */
+  endAt: string;
+  slug: string;
+  bookingId: number;
   /** The signed-in person, for the initials shown while the camera is off. */
   name: string;
   backHref: string;
   call: CallLink;
 }) {
   const media = useLocalMedia();
+  const clock = useCallClock(slug, endAt, bookingId);
+  // the call itself opens in the video service's own tab; this tab stays behind as the session's clock
+  const [joined, setJoined] = useState(false);
+
+  if (joined && call.kind === "link") {
+    return (
+      <RoomFrame title={title} who={who}>
+        <main className="mx-auto grid w-full max-w-xl flex-1 items-center px-4 pb-10 text-center sm:px-6">
+          <div className="space-y-4">
+            <p className="text-small font-bold tracking-widest text-white/60 uppercase">{clock.phase === "ended" ? "Session ended" : "In your session"}</p>
+            <p role="timer" aria-label="Time left" className="text-[4rem] leading-none font-extrabold tabular-nums">
+              {clock.phase === "ended" ? "0:00" : mmss(clock.left)}
+            </p>
+            <p className="text-body text-white/70">
+              {clock.phase === "ended" ? "The scheduled time is up. Leave the call tab if it is still open." : `with ${who} · the call is open in another tab. This clock keeps the time.`}
+            </p>
+            <EndWarning clock={clock} />
+            <ExtendedNote clock={clock} />
+            <ExtendButton clock={clock} />
+            <div className="flex flex-wrap justify-center gap-3 pt-2">
+              {clock.phase !== "ended" && (
+                <ButtonLink href={call.url} variant="onDark" size="sm" target="_blank" rel="noopener noreferrer">
+                  Reopen the call
+                </ButtonLink>
+              )}
+              <ButtonLink href={backHref} variant={clock.phase === "ended" ? "light" : "onDark"} size="sm">
+                <ArrowLeft className="size-4" aria-hidden="true" /> Back to My Bookings
+              </ButtonLink>
+            </div>
+          </div>
+        </main>
+      </RoomFrame>
+    );
+  }
 
   return (
     <RoomFrame title={title} who={who}>
@@ -73,7 +117,10 @@ export function Lobby({
               href={call.url}
               variant="light"
               className="w-full"
-              onClick={media.stop}
+              onClick={() => {
+                media.stop();
+                setJoined(true);
+              }}
               {...(call.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             >
               <Video className="size-4" aria-hidden="true" /> Join now

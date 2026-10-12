@@ -21,5 +21,5 @@ export default async function LocalRoomPage({ params }: { params: Promise<{ slug
   if (!res.ok) notFound();
   if (res.data.state !== "OPEN" || res.data.provider !== "LOCAL") redirect(`/call/${slug}`);
 
-  return <LocalRoom title={res.data.serviceTitle} who={res.data.otherName} name={session.fullName || "You"} leaveHref="/bookings" />;
+  return <LocalRoom title={res.data.serviceTitle} who={res.data.otherName} name={session.fullName || "You"} leaveHref="/bookings" endAt={res.data.endAt} slug={res.data.slug} bookingId={res.data.bookingId} />;
 }

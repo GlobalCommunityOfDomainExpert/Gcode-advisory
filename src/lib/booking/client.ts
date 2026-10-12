@@ -1,5 +1,5 @@
 /** Browser side of the booking API. Talks only to our own /api/booking and /api/payments routes. */
-import type { BookingAction, BookingRating, BookingView, DayCount, NextDay, PaymentOrder, ProblemReport, ReportType, Slot } from "./types";
+import type { BookingAction, CallClockInfo, BookingRating, BookingView, DayCount, NextDay, PaymentOrder, ProblemReport, ReportType, Slot } from "./types";
 
 export interface ApiResult<T> {
   ok: boolean;
@@ -60,3 +60,9 @@ export const rateBooking = (id: number, body: { stars: number; comment: string }
 
 /** Either person reports a problem. Support decides; nothing is refunded before that. */
 export const reportBooking = (id: number, body: { type: ReportType; note: string }) => call<ProblemReport>(`/api/booking/${id}/report`, post("", body));
+
+/** The expert adds 15 minutes to the running session (free; twice at most). */
+export const extendSession = (id: number) => call<CallClockInfo>(`/api/booking/${id}/extend`, post("", {}));
+
+/** The session's current end and whether this person may extend it. Read-only. */
+export const getCallClock = (slug: string) => call<CallClockInfo>(`/api/call/${slug}/clock`);

@@ -95,7 +95,7 @@ export interface ZohoLinks {
 
 const TOKEN_MS = 50 * 60_000;
 const BACKOFF_MS = 10 * 60_000;
-const GRACE_MIN = 15;
+const GRACE_MIN = 0;  // the session is as long as it was booked: Zoho's own end-of-session notice then matches the booked end
 const MIN_MIN = 15;
 
 /** First value stored under `key` anywhere in the answer (Zoho nests it differently per call). */

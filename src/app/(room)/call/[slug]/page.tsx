@@ -86,5 +86,5 @@ export default async function CallPage({ params }: { params: Promise<{ slug: str
   }
 
   const call = await resolveCall(session.token, info);
-  return <Lobby title={info.serviceTitle} who={info.otherName} when={when} name={session.fullName || "You"} backHref="/bookings" call={call} />;
+  return <Lobby title={info.serviceTitle} who={info.otherName} when={when} endAt={info.endAt} slug={info.slug} bookingId={info.bookingId} name={session.fullName || "You"} backHref="/bookings" call={call} />;
 }

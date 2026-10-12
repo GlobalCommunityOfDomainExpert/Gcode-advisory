@@ -136,7 +136,7 @@ describe("createSession", () => {
     expect(sent.topic).toBe("GCODE session");
     expect(sent.presenter).toBe(222);
     expect(sent.startTime).toBe("Oct 12, 2026 10:00 AM");
-    expect(sent.duration).toBe(45 * 60_000);          // 30 minutes + 15 minutes of grace
+    expect(sent.duration).toBe(30 * 60_000);          // as long as it was booked
     expect(sent.timezone).toBe("Asia/Calcutta");
     expect(JSON.stringify(sent)).not.toMatch(/participants|email/i);
     expect(z.calls[0].url).toBe("https://meeting.test/api/v2/111/sessions.json");
@@ -149,7 +149,7 @@ describe("createSession", () => {
     await client.createSession({ startAt: new Date("2026-10-12T04:30:00Z"), endAt: new Date("2026-10-12T05:00:00Z") });
     const sent = (z.calls[0].body as { session: Record<string, unknown> }).session;
     expect(sent.startTime).toBe("Oct 12, 2026 10:11 AM");
-    expect(sent.duration).toBe((19 + 15) * 60_000);
+    expect(sent.duration).toBe(19 * 60_000);
   });
 
   it("fails when Zoho answers without a meeting key", async () => {
