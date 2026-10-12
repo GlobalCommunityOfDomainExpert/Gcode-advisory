@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { PageHeader } from "@/components/layout";
 import { ORDER_ID } from "@/lib/server/payments";
 import { getSession } from "@/lib/server/session";
 import { PaymentReturn } from "./_components/payment-return";
@@ -17,9 +16,8 @@ export default async function PaymentReturnPage({ searchParams }: { searchParams
   const { order_id: orderId } = await searchParams;
 
   return (
-    <>
-      <PageHeader eyebrow="Payment" title="Checking your payment" />
+    <div className="py-8">
       <PaymentReturn orderId={typeof orderId === "string" && ORDER_ID.test(orderId) ? orderId : null} />
-    </>
+    </div>
   );
 }
