@@ -153,19 +153,33 @@ function PricePicker({ min, max, top, step, onApply }: { min: string; max: strin
             <span>{rupee("0")}</span>
             <span>{rupee(String(top))}+</span>
           </div>
-          {active && (
+          <div className="mt-3 flex items-center justify-between">
+            {active ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setRange({ lo: 0, hi: top });
+                  setOpen(false);
+                  onApply("", "");
+                }}
+                className="text-small text-text-secondary hover:text-text-primary focus-visible:ring-primary rounded-sm font-medium underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+              >
+                Clear price
+              </button>
+            ) : (
+              <span />
+            )}
             <button
               type="button"
               onClick={() => {
-                setRange({ lo: 0, hi: top });
+                // the filter already applied when a handle was let go; Done confirms it and closes the panel
                 setOpen(false);
-                onApply("", "");
               }}
-              className="text-small text-text-secondary hover:text-text-primary focus-visible:ring-primary mt-3 rounded-sm font-medium underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+              className="bg-primary text-small hover:bg-primary-hover focus-visible:ring-primary rounded-sm px-4 py-2 font-bold text-white focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
             >
-              Clear price
+              Done
             </button>
-          )}
+          </div>
         </div>
       )}
     </div>
