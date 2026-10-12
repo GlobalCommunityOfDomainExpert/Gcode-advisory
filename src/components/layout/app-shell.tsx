@@ -25,7 +25,8 @@ export function AppShell({ navbar, sidebar, sidebarCompact = false, children }: 
         )}
         <main id="app-scroll-region" className="relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
           <div className="isolate mx-auto w-full max-w-7xl flex-1 px-4 pb-8 sm:px-6 lg:px-8">{children}</div>
-          <Footer />
+          {/* a small gap, not the stand-alone default: on a short page a big one only adds scrolling */}
+          <Footer className="mt-6" />
         </main>
       </div>
     </div>

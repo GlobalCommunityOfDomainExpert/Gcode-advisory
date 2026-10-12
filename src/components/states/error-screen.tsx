@@ -38,7 +38,7 @@ export function ErrorScreen({ error, retry }: { error: Error & { digest?: string
         description="We couldn’t show this page. Your account, bookings and payments are safe."
         actions={
           <>
-            <Button onClick={() => retry()}>
+            <Button variant="secondary" onClick={() => retry()}>
               <Icon icon={RotateCcw} size="sm" /> Try again
             </Button>
             <ButtonLink href="/directory" variant="secondary">
@@ -48,13 +48,13 @@ export function ErrorScreen({ error, retry }: { error: Error & { digest?: string
         }
       >
         {error.digest && (
-          <p className="text-small text-text-secondary mt-8 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-            If it keeps happening, reply to any GCODE email with this reference: <span className="text-text-primary font-mono font-semibold">{error.digest}</span>
+          <p className="text-small text-text-secondary mt-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+            If it keeps happening, reply to any GCODE email with this reference: <span className="text-text-primary font-mono">{error.digest}</span>
             <button
               type="button"
               onClick={copy}
               aria-live="polite"
-              className="text-primary inline-flex items-center gap-1 rounded-sm font-semibold underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+              className="text-text-secondary hover:text-text-primary inline-flex items-center gap-1 rounded-sm underline underline-offset-2 focus-visible:ring-2 focus-visible:outline-none"
             >
               <Icon icon={copied ? Check : Copy} size="sm" className="size-3.5!" /> {copied ? "Copied" : "Copy"}
             </button>

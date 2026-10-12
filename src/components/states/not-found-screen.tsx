@@ -14,7 +14,9 @@ export function NotFoundScreen({ signedIn }: { signedIn: boolean }) {
       description="The link may be old or mistyped. Your account and bookings are safe."
       actions={
         <>
-          <ButtonLink href="/directory">Go to the Directory</ButtonLink>
+          <ButtonLink href="/directory" variant="secondary">
+            Go to the Directory
+          </ButtonLink>
           {signedIn ? (
             <ButtonLink href="/bookings" variant="secondary">
               My bookings
