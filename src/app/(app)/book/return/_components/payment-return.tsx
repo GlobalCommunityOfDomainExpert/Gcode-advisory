@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { CheckCircle2, CircleAlert, Hourglass } from "lucide-react";
 import { Button, ButtonLink, Icon, Spinner } from "@/components/atoms";
 import { Banner } from "@/components/molecules";
@@ -61,7 +62,7 @@ export function PaymentReturn({ orderId }: { orderId: string | null }) {
   if (!orderId) {
     return (
       <Banner tone="danger" icon={CircleAlert}>
-        This payment link isn’t valid. Open <a className="underline" href="/bookings">My bookings</a> to see your requests.
+        This payment link isn’t valid. Open <Link className="underline" href="/bookings">My bookings</Link> to see your requests.
       </Banner>
     );
   }
