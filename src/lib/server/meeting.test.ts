@@ -61,7 +61,7 @@ describe("resolveCall", () => {
     const z = fakeClient();
     ords.mockResolvedValueOnce({ ok: true, data: { ok: true } }).mockResolvedValueOnce({ ok: true, data: { ...base, room: "mk-new", needsRoom: false } });
     const out = await resolveCall("tok", base, z);
-    expect(out).toEqual({ kind: "link", url: "https://meet.test/j?pwd=1", external: false, embed: true });
+    expect(out).toEqual({ kind: "link", url: "https://meet.test/j?pwd=1", external: true, embed: false });
     expect(z.createSession).toHaveBeenCalledTimes(1);
     const [path, opts] = ords.mock.calls[0];
     expect(path).toBe("/bookings/7/room");
@@ -70,10 +70,16 @@ describe("resolveCall", () => {
     expect(z.deleteSession).not.toHaveBeenCalled();
   });
 
+  it("an SDK stateless start link is shown inside our page; every other link opens in its own tab", async () => {
+    const sdk = fakeClient({ getLinks: vi.fn(async (k: string) => ({ meetingKey: k, joinLink: "https://meet.test/j?pwd=1", startLink: "https://meeting.zoho.in/meeting/statelessStart?signature=abc&key=1&frameOrigin=https://advisory.gcode.in" })) });
+    const out = await resolveCall("tok", { ...base, role: "expert", needsRoom: false, room: "mk-9" }, sdk);
+    expect(out).toMatchObject({ kind: "link", external: false, embed: true });
+  });
+
   it("the expert gets the host link, never the join link", async () => {
     const z = fakeClient();
     const out = await resolveCall("tok", { ...base, role: "expert", needsRoom: false, room: "mk-9" }, z);
-    expect(out).toEqual({ kind: "link", url: "https://meet.test/s?sig=1", external: false, embed: true });
+    expect(out).toEqual({ kind: "link", url: "https://meet.test/s?sig=1", external: true, embed: false });
     expect(z.createSession).not.toHaveBeenCalled();
     expect(z.getLinks).toHaveBeenCalledWith("mk-9");
   });
