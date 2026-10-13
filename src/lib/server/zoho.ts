@@ -30,6 +30,8 @@ export interface ZohoConfig {
   orgId: string;
   presenterId: string;
   source: string;
+  /** Make sessions through the SDK API (needs the ZohoMeeting.sdk.CREATE scope and a registered domain): their start link works without a Zoho sign-in. */
+  sdk?: boolean;
 }
 
 const DOMAINS: Record<string, [string, string]> = {
@@ -48,7 +50,7 @@ export function zohoConfig(env: Record<string, string | undefined> = process.env
   const { ZOHO_CLIENT_ID: clientId, ZOHO_CLIENT_SECRET: clientSecret, ZOHO_REFRESH_TOKEN: refreshToken, ZOHO_ORG_ID: orgId, ZOHO_PRESENTER_ID: presenterId } = env;
   if (!domains || !clientId || !clientSecret || !refreshToken || !orgId || !presenterId) return null;
   if (!/^\d{1,20}$/.test(orgId) || !/^\d{1,20}$/.test(presenterId)) return null;
-  return { accountsBase: domains[0], apiBase: domains[1], clientId, clientSecret, refreshToken, orgId, presenterId, source: env.ZOHO_SOURCE_NAME || "GCODE" };
+  return { accountsBase: domains[0], apiBase: domains[1], clientId, clientSecret, refreshToken, orgId, presenterId, source: env.ZOHO_SOURCE_NAME || "GCODE", sdk: (env.ZOHO_SDK ?? "").trim().toLowerCase() !== "off" };
 }
 
 /** One row of Zoho's participant report. Times are epoch milliseconds; duration is milliseconds in the call. */
@@ -187,11 +189,15 @@ export function createZoho(cfg: ZohoConfig, fetchImpl: typeof fetch = fetch, now
   }
 
   return {
+    /** True when sessions are made through the SDK API. */
+    sdk: !!cfg.sdk,
+
     /** Creates the session for one booking. Times are real instants; a start already in the past is moved to "now". */
     async createSession(input: { startAt: Date; endAt: Date }): Promise<ZohoLinks> {
       const start = new Date(Math.max(input.startAt.getTime(), now() + 60_000));
       const minutes = Math.max(MIN_MIN, Math.ceil((input.endAt.getTime() - start.getTime()) / 60_000)) + GRACE_MIN;
-      const answer = await call("POST", `/api/v2/${cfg.orgId}/sessions.json`, {
+      const path = cfg.sdk ? `/meeting/api/v2/${cfg.orgId}/sdk/session` : `/api/v2/${cfg.orgId}/sessions.json`;
+      const answer = await call("POST", path, {
         session: { topic: "GCODE session", agenda: "GCODE advisory session", presenter: Number(cfg.presenterId), startTime: zohoStartTime(start), duration: minutes * 60_000, timezone: "Asia/Calcutta" },
       });
       const meetingKey = deepFind(answer, "meetingKey");

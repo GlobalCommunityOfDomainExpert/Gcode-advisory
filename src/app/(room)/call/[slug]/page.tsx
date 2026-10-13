@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { ButtonLink } from "@/components/atoms";
 import { ords } from "@/lib/server/ords";
 import { getSession } from "@/lib/server/session";
-import { resolveCall } from "@/lib/server/meeting";
+import { previewCall, resolveCall } from "@/lib/server/meeting";
 import { syncAttendance } from "@/lib/server/attendance";
 import type { JoinInfo } from "@/lib/booking/types";
 import { fmtDayLong, fmtTime } from "@/lib/booking/time";
@@ -85,6 +85,7 @@ export default async function CallPage({ params }: { params: Promise<{ slug: str
     );
   }
 
-  const call = await resolveCall(session.token, info);
+  // a video-service room is made (or looked up) when "Join now" is pressed; the stand-in room is already there
+  const call = previewCall(info) ?? (await resolveCall(session.token, info));
   return <Lobby title={info.serviceTitle} who={info.otherName} when={when} endAt={info.endAt} slug={info.slug} bookingId={info.bookingId} name={session.fullName || "You"} backHref="/bookings" call={call} />;
 }

@@ -26,6 +26,7 @@ function fakeZoho(over: { token?: () => Response } = {}) {
     }
     const headers = new Headers(init?.headers);
     calls.push({ method: init?.method ?? "GET", url, body: init?.body ? JSON.parse(String(init.body)) : undefined, auth: headers.get("authorization") });
+    if (url.endsWith("/sdk/session")) return json({ session: { meetingKey: "mk-sdk", joinLink: "https://meet.test/j/sdk", startLink: "https://meet.test/statelessStart?key=mk-sdk" } });
     if (url.endsWith("/sessions.json")) return json({ session: { meetingKey: "mk-1", joinLink: "https://meet.test/j/1?pwd=x", startLink: "https://meet.test/s/1?sig=y" } });
     if (url.includes("/sessions/mk-1.json") && init?.method === "GET") return json({ session: { joinLink: "https://meet.test/j/1?pwd=x", startLink: "https://meet.test/s/1?sig=y" } });
     return json({}, 200);
@@ -40,6 +41,10 @@ describe("zohoConfig", () => {
     expect(c?.accountsBase).toBe("https://accounts.zoho.in");
     expect(c?.apiBase).toBe("https://meeting.zoho.in");
     expect(c?.source).toBe("GCODE");
+  });
+  it("makes SDK sessions unless ZOHO_SDK is off", () => {
+    expect(zohoConfig(full)?.sdk).toBe(true);
+    expect(zohoConfig({ ...full, ZOHO_SDK: "off" })?.sdk).toBe(false);
   });
   it("is null when anything is missing, the data centre is unknown, or an id is not a number", () => {
     expect(zohoConfig({ ...full, ZOHO_REFRESH_TOKEN: "" })).toBeNull();
@@ -140,6 +145,15 @@ describe("createSession", () => {
     expect(sent.timezone).toBe("Asia/Calcutta");
     expect(JSON.stringify(sent)).not.toMatch(/participants|email/i);
     expect(z.calls[0].url).toBe("https://meeting.test/api/v2/111/sessions.json");
+  });
+
+  it("uses the SDK session endpoint when SDK mode is on (and reports it)", async () => {
+    const z = fakeZoho();
+    const client = createZoho({ ...cfg, sdk: true }, z.fetchImpl, () => new Date("2026-10-10T00:00:00Z").getTime());
+    expect(client.sdk).toBe(true);
+    await client.createSession({ startAt: new Date("2026-10-12T04:30:00Z"), endAt: new Date("2026-10-12T05:00:00Z") });
+    expect(z.calls[0].url).toBe("https://meeting.test/meeting/api/v2/111/sdk/session");
+    expect(createZoho(cfg, fakeZoho().fetchImpl).sdk).toBe(false);
   });
 
   it("moves a start that is already in the past to a minute from now and keeps the end", async () => {
