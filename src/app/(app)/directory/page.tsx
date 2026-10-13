@@ -7,7 +7,8 @@ import { EmptyState, PAGE_SIZE, PageNav, pageFrom, skipFor } from "@/components/
 import { ords } from "@/lib/server/ords";
 import { getSession } from "@/lib/server/session";
 import type { DirectoryFilters, DirectoryList, DirectorySort } from "@/lib/booking/types";
-import { DirectoryControls, directoryHref, type DirectoryQuery } from "./_components/directory-controls";
+import { directoryHref, type DirectoryQuery } from "@/lib/booking/directory-query";
+import { DirectoryControls } from "./_components/directory-controls";
 import { ExpertCardView } from "./_components/expert-card";
 
 export const metadata: Metadata = { title: "Directory" };
