@@ -12,7 +12,7 @@ export function PageNumbers({ page, hrefs, label = "More results" }: { page: num
   const router = useRouter();
   if (hrefs.length <= 1) return null;
   return (
-    <div className="flex justify-center pb-8" role="navigation" aria-label={label}>
+    <div className="flex items-center justify-center py-6" role="navigation" aria-label={label}>
       <Pagination page={page} totalPages={hrefs.length} onPageChange={(p) => router.push(hrefs[p - 1] ?? hrefs[0])} />
     </div>
   );
