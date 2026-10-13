@@ -87,5 +87,5 @@ export default async function CallPage({ params }: { params: Promise<{ slug: str
 
   // a video-service room is made (or looked up) when "Join now" is pressed; the stand-in room is already there
   const call = previewCall(info) ?? (await resolveCall(session.token, info));
-  return <Lobby title={info.serviceTitle} who={info.otherName} when={when} endAt={info.endAt} slug={info.slug} bookingId={info.bookingId} name={session.fullName || "You"} backHref="/bookings" call={call} />;
+  return <Lobby title={info.serviceTitle} who={info.otherName} when={when} endAt={info.endAt} slug={info.slug} bookingId={info.bookingId} name={session.fullName || "You"} backHref="/bookings" call={call} role={info.role} />;
 }

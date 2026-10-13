@@ -7,24 +7,23 @@ import { RoomFrame } from "./room-frame";
 import { RoundButton } from "./round-button";
 import { SelfView } from "./self-view";
 import { useLocalMedia } from "@/lib/booking/use-local-media";
-import { joinCall } from "@/lib/booking/client";
 import { mmss, useCallClock } from "@/lib/booking/use-call-clock";
 import { EndWarning, ExtendButton, ExtendedNote } from "./end-warning";
 import { ZohoRoom } from "./zoho-room";
+import { VideoLobby } from "./video-lobby";
 import type { CallLink } from "@/lib/server/meeting";
 
 const UNAVAILABLE: Record<string, string> = {
   not_configured: "Video calls aren’t switched on for this environment yet.",
   busy: "The video service is busy right now. Please try again in a few minutes.",
   failed: "We couldn’t open the video room. Please try again in a minute.",
-  waiting: "The expert hasn’t opened the room yet. Try again in a moment.",
 };
 
 /**
  * The lobby from the wireframe: your own camera and microphone first (so you know they work), the session on the right, and
  * one big "Join now". Your devices are released the moment you leave for the call so the call itself can use them.
  */
-export function Lobby({
+function DeviceLobby({
   title,
   who,
   when,
@@ -51,32 +50,13 @@ export function Lobby({
   const clock = useCallClock(slug, endAt, bookingId);
   // the call itself opens in the video service's own tab; this tab stays behind as the session's clock
   const [joined, setJoined] = useState(false);
-  // a video-service room is made or found when "Join now" is pressed; `active` is what came back
-  const [active, setActive] = useState<CallLink | null>(null);
-  const [joining, setJoining] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const room: CallLink = active ?? call;
-
-  async function joinNow() {
-    setJoining(true);
-    setNotice(null);
-    const res = await joinCall(slug);
-    setJoining(false);
-    const answer = res.data;
-    if (!res.ok || !answer) return setNotice(res.error ?? UNAVAILABLE.failed);
-    if (answer.kind !== "link") return setNotice(UNAVAILABLE[answer.reason]);
-    media.stop();
-    setActive({ kind: "link", url: answer.url, external: answer.external, embed: answer.embed });
-    setJoined(true);
-    if (!answer.embed) window.open(answer.url, "_blank", "noopener,noreferrer");
-  }
 
   // the video service's room is shown inside this page (with the clock, the warning and the end of the session)
-  if (joined && room.kind === "link" && room.embed) {
-    return <ZohoRoom title={title} who={who} url={room.url} endAt={endAt} slug={slug} bookingId={bookingId} backHref={backHref} />;
+  if (joined && call.kind === "link" && call.embed) {
+    return <ZohoRoom title={title} who={who} url={call.url} endAt={endAt} slug={slug} bookingId={bookingId} backHref={backHref} />;
   }
 
-  if (joined && room.kind === "link") {
+  if (joined && call.kind === "link") {
     return (
       <RoomFrame title={title} who={who}>
         <main className="mx-auto grid w-full max-w-xl flex-1 items-center px-4 pb-10 text-center sm:px-6">
@@ -93,7 +73,7 @@ export function Lobby({
             <ExtendButton clock={clock} />
             <div className="flex flex-wrap justify-center gap-3 pt-2">
               {clock.phase !== "ended" && (
-                <ButtonLink href={room.url} variant="onDark" size="sm" target="_blank" rel="noopener noreferrer">
+                <ButtonLink href={call.url} variant="onDark" size="sm" target="_blank" rel="noopener noreferrer">
                   Reopen the call
                 </ButtonLink>
               )}
@@ -139,18 +119,7 @@ export function Lobby({
             <p className="text-small mt-1 text-white/60">{when}</p>
           </div>
 
-          {call.kind === "join" ? (
-            <div className="space-y-3">
-              <Button variant="light" className="w-full" loading={joining} onClick={joinNow}>
-                <Video className="size-4" aria-hidden="true" /> Join now
-              </Button>
-              {notice && (
-                <p role="status" className="text-small text-white">
-                  {notice}
-                </p>
-              )}
-            </div>
-          ) : call.kind === "link" && call.embed ? (
+          {call.kind === "link" && call.embed ? (
             <Button
               variant="light"
               className="w-full"
@@ -176,7 +145,7 @@ export function Lobby({
             </ButtonLink>
           ) : (
             <div className="space-y-3" role="status">
-              <p className="text-body text-white">{UNAVAILABLE[call.reason]}</p>
+              <p className="text-body text-white">{UNAVAILABLE[call.kind === "unavailable" ? call.reason : "failed"]}</p>
               <Button variant="light" className="w-full" onClick={() => window.location.reload()}>
                 Try again
               </Button>
@@ -191,4 +160,16 @@ export function Lobby({
       </main>
     </RoomFrame>
   );
+}
+
+/**
+ * A video-service room (Zoho) has no device check of our own: its own screens ask for the camera and microphone once you are in, so a
+ * second check here would only ask twice. The stand-in room keeps the check.
+ */
+export function Lobby(props: Parameters<typeof DeviceLobby>[0] & { role: "expert" | "requester" }) {
+  if (props.call.kind === "join") {
+    const { title, who, when, endAt, slug, bookingId, backHref, role } = props;
+    return <VideoLobby title={title} who={who} when={when} endAt={endAt} slug={slug} bookingId={bookingId} backHref={backHref} role={role} />;
+  }
+  return <DeviceLobby {...props} />;
 }
