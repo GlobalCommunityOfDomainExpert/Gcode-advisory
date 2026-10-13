@@ -3,14 +3,15 @@ import { isHttps, zoho, ZohoError, type Zoho } from "./zoho";
 import type { JoinInfo } from "@/lib/booking/types";
 
 /** What the call page can do for this person right now. */
-export type CallLink = { kind: "link"; url: string; external: boolean } | { kind: "unavailable"; reason: "not_configured" | "busy" | "failed" };
+/** embed: the link is the video vendor's room and is shown inside our own call page (an iframe), not opened in another tab. */
+export type CallLink = { kind: "link"; url: string; external: boolean; embed?: boolean } | { kind: "unavailable"; reason: "not_configured" | "busy" | "failed" };
 
 /**
  * Turns "the room is open for this person" (the database's answer) into a link they can follow.
  *  - LOCAL provider: the database already made the room; its link is our own stand-in page.
  *  - ZOHO provider: the first person in creates the Zoho session and reports it back to the database (which keeps only the
  *    first report); then each person gets their own link, fetched fresh and never stored: the expert the host link,
- *    the booker the join link.
+ *    the booker the join link. The page shows that link inside itself (embed), so the person never leaves our site.
  */
 export async function resolveCall(token: string, info: JoinInfo, client: Zoho | null = zoho()): Promise<CallLink> {
   if (info.state !== "OPEN") return { kind: "unavailable", reason: "failed" };
@@ -44,7 +45,7 @@ export async function resolveCall(token: string, info: JoinInfo, client: Zoho | 
 
     const links = await client.getLinks(room);
     const url = info.role === "expert" ? links.startLink : links.joinLink;
-    return isHttps(url) ? { kind: "link", url, external: true } : { kind: "unavailable", reason: "failed" };
+    return isHttps(url) ? { kind: "link", url, external: false, embed: true } : { kind: "unavailable", reason: "failed" };
   } catch (e) {
     if (e instanceof ZohoError && e.kind === "throttled") return { kind: "unavailable", reason: "busy" };
     return { kind: "unavailable", reason: "failed" };

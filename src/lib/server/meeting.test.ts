@@ -61,7 +61,7 @@ describe("resolveCall", () => {
     const z = fakeClient();
     ords.mockResolvedValueOnce({ ok: true, data: { ok: true } }).mockResolvedValueOnce({ ok: true, data: { ...base, room: "mk-new", needsRoom: false } });
     const out = await resolveCall("tok", base, z);
-    expect(out).toEqual({ kind: "link", url: "https://meet.test/j?pwd=1", external: true });
+    expect(out).toEqual({ kind: "link", url: "https://meet.test/j?pwd=1", external: false, embed: true });
     expect(z.createSession).toHaveBeenCalledTimes(1);
     const [path, opts] = ords.mock.calls[0];
     expect(path).toBe("/bookings/7/room");
@@ -73,7 +73,7 @@ describe("resolveCall", () => {
   it("the expert gets the host link, never the join link", async () => {
     const z = fakeClient();
     const out = await resolveCall("tok", { ...base, role: "expert", needsRoom: false, room: "mk-9" }, z);
-    expect(out).toEqual({ kind: "link", url: "https://meet.test/s?sig=1", external: true });
+    expect(out).toEqual({ kind: "link", url: "https://meet.test/s?sig=1", external: false, embed: true });
     expect(z.createSession).not.toHaveBeenCalled();
     expect(z.getLinks).toHaveBeenCalledWith("mk-9");
   });

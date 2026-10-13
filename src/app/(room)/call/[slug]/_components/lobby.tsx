@@ -9,6 +9,7 @@ import { SelfView } from "./self-view";
 import { useLocalMedia } from "@/lib/booking/use-local-media";
 import { mmss, useCallClock } from "@/lib/booking/use-call-clock";
 import { EndWarning, ExtendButton, ExtendedNote } from "./end-warning";
+import { ZohoRoom } from "./zoho-room";
 import type { CallLink } from "@/lib/server/meeting";
 
 const UNAVAILABLE: Record<string, string> = {
@@ -48,6 +49,11 @@ export function Lobby({
   const clock = useCallClock(slug, endAt, bookingId);
   // the call itself opens in the video service's own tab; this tab stays behind as the session's clock
   const [joined, setJoined] = useState(false);
+
+  // the video service's room is shown inside this page (with the clock, the warning and the end of the session)
+  if (joined && call.kind === "link" && call.embed) {
+    return <ZohoRoom title={title} who={who} url={call.url} endAt={endAt} slug={slug} bookingId={bookingId} backHref={backHref} />;
+  }
 
   if (joined && call.kind === "link") {
     return (
@@ -112,7 +118,18 @@ export function Lobby({
             <p className="text-small mt-1 text-white/60">{when}</p>
           </div>
 
-          {call.kind === "link" ? (
+          {call.kind === "link" && call.embed ? (
+            <Button
+              variant="light"
+              className="w-full"
+              onClick={() => {
+                media.stop();
+                setJoined(true);
+              }}
+            >
+              <Video className="size-4" aria-hidden="true" /> Join now
+            </Button>
+          ) : call.kind === "link" ? (
             <ButtonLink
               href={call.url}
               variant="light"

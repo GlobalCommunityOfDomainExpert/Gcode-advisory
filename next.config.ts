@@ -1,10 +1,15 @@
 import type { NextConfig } from "next";
 
+// The video call runs in an iframe from the video service (Zoho Meeting, whichever data centre the account is on): the browser only
+// hands the camera, microphone and screen share to a frame the page names here.
+const VIDEO_HOSTS = ["com", "in", "eu", "com.au", "jp", "sa"].map((d) => `"https://meeting.zoho.${d}"`).concat('"https://meeting.zohocloud.ca"').join(" ");
+const allowVideo = (name: string) => `${name}=(self ${VIDEO_HOSTS})`;
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
+  { key: "Permissions-Policy", value: `${allowVideo("camera")}, ${allowVideo("microphone")}, ${allowVideo("display-capture")}, geolocation=()` },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
 ];
 
