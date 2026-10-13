@@ -47,7 +47,7 @@ export async function resolveCall(token: string, info: JoinInfo, client: Zoho | 
     const url = info.role === "expert" ? links.startLink : links.joinLink;
     // Only the SDK's stateless start link can live inside an iframe (the ordinary start link bounces through Zoho's sign-in page, which
     // refuses to be framed). Every other link keeps opening in its own tab.
-    const embed = /\/statelessStart/.test(url ?? "");
+    const embed = /\/statelessStart/.test(url ?? "");
     return isHttps(url) ? { kind: "link", url, external: !embed, embed } : { kind: "unavailable", reason: "failed" };
   } catch (e) {
     if (e instanceof ZohoError && e.kind === "throttled") return { kind: "unavailable", reason: "busy" };
