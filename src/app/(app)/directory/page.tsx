@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { SearchX, Users } from "lucide-react";
 import { PageHeader } from "@/components/layout";
 import { ButtonLink } from "@/components/atoms";
-import { EmptyState, PAGE_SIZE, PageNav, pageFrom, skipFor } from "@/components/molecules";
+import { EmptyState, PageNumbers } from "@/components/molecules";
+import { PAGE_SIZE, pageFrom, pageHrefs, skipFor } from "@/lib/paging";
 import { ords } from "@/lib/server/ords";
 import { getSession } from "@/lib/server/session";
 import type { DirectoryFilters, DirectoryList, DirectorySort } from "@/lib/booking/types";
@@ -97,7 +98,7 @@ export default async function DirectoryPage({
                   <ExpertCardView key={e.userId} expert={e} paymentsEnabled={res.data.paymentsEnabled} />
                 ))}
               </div>
-              <PageNav page={page} hasMore={res.data.hasMore} href={(n) => directoryHref(query, n)} label="More experts" />
+              <PageNumbers page={page} hrefs={pageHrefs(res.data.total, (n) => directoryHref(query, n))} label="More experts" />
             </>
           )}
         </>

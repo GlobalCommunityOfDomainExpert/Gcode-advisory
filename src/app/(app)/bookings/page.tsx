@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { CalendarClock } from "lucide-react";
 import { PageHeader } from "@/components/layout";
 import { ButtonLink } from "@/components/atoms";
-import { Banner, EmptyState, PAGE_SIZE, PageNav, pageFrom, skipFor } from "@/components/molecules";
+import { Banner, EmptyState, PageNumbers } from "@/components/molecules";
+import { PAGE_SIZE, pageFrom, pageHrefs, skipFor } from "@/lib/paging";
 import { ords } from "@/lib/server/ords";
 import { getSession } from "@/lib/server/session";
 import { BOOKING_TABS, type BookingList as BookingListData, type BookingReason, type BookingTab } from "@/lib/booking/types";
@@ -66,7 +67,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
             </div>
           )}
           <BookingList items={res.data.items} reasons={reasons.ok ? reasons.data : []} grouped={tab === "upcoming"} />
-          <PageNav page={page} hasMore={!!res.data.hasMore} href={(n) => `/bookings?tab=${tab}${n > 1 ? `&page=${n}` : ""}`} label="More bookings" />
+          <PageNumbers page={page} hrefs={pageHrefs(res.data.counts[tab] ?? 0, (n) => `/bookings?tab=${tab}${n > 1 ? `&page=${n}` : ""}`)} label="More bookings" />
         </div>
       )}
     </>
