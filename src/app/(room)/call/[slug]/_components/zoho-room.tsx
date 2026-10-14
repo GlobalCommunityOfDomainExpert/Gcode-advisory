@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Star, Video, X } from "lucide-react";
+import { ArrowLeft, Video, X } from "lucide-react";
 import { Button, ButtonLink } from "@/components/atoms";
 import { RoomFrame, RoomPanel } from "./room-frame";
+import { InlineRate } from "./inline-rate";
 import { EndWarning, ExtendButton } from "./end-warning";
 import { mmss, useCallClock } from "@/lib/booking/use-call-clock";
 
@@ -44,6 +45,7 @@ export function ZohoRoom({
   slug,
   bookingId,
   backHref,
+  role = "requester",
 }: {
   title: string;
   who: string;
@@ -52,6 +54,7 @@ export function ZohoRoom({
   slug: string;
   bookingId: number;
   backHref: string;
+  role?: "expert" | "requester";
 }) {
   const clock = useCallClock(slug, endAt, bookingId);
   const [over, setOver] = useState(false); // the video service ended the call for this person, inside the frame
@@ -112,15 +115,11 @@ export function ZohoRoom({
           <p className="text-body text-white/70">
             Your session with {who} has ended and the call was closed for you.
           </p>
-          <p className="text-small text-white/60">
-            You can rate the session in My Bookings once it has been finalised,
-            about 15 minutes after the scheduled end. We’ll also send a
-            reminder.
-          </p>
-          <div className="pt-2">
-            <ButtonLink href={backHref} variant="light" size="sm">
-              <Star className="size-4" aria-hidden="true" /> Go to My Bookings
-              to rate
+          <InlineRate bookingId={bookingId} role={role} />
+          <div className="pt-1">
+            <ButtonLink href={backHref} variant="onDark" size="sm">
+              <ArrowLeft className="size-4" aria-hidden="true" /> Back to My
+              Bookings
             </ButtonLink>
           </div>
         </RoomPanel>

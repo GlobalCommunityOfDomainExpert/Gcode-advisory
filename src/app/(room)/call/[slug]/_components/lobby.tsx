@@ -17,6 +17,7 @@ const UNAVAILABLE: Record<string, string> = {
   not_configured: "Video calls aren’t switched on for this environment yet.",
   busy: "The video service is busy right now. Please try again in a few minutes.",
   failed: "We couldn’t open the video room. Please try again in a minute.",
+  closed: "This room can’t be reopened from here. The host link only works in the browser that first opened the call.",
 };
 
 /**
@@ -33,6 +34,7 @@ function DeviceLobby({
   name,
   backHref,
   call,
+  role = "requester",
 }: {
   title: string;
   who: string;
@@ -45,6 +47,7 @@ function DeviceLobby({
   name: string;
   backHref: string;
   call: CallLink;
+  role?: "expert" | "requester";
 }) {
   const media = useLocalMedia();
   const clock = useCallClock(slug, endAt, bookingId);
@@ -62,6 +65,7 @@ function DeviceLobby({
         slug={slug}
         bookingId={bookingId}
         backHref={backHref}
+        role={role}
       />
     );
   }

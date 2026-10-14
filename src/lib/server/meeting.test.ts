@@ -159,11 +159,10 @@ describe("resolveCall with SDK sessions", () => {
     const z = sdkClient();
     const back = { ...base, role: "expert" as const, needsRoom: false, room: "mk-sdk" };
     expect(await resolveCall("tok", back, z, STATELESS)).toMatchObject({ kind: "link", url: STATELESS, embed: true });
-    const other = await resolveCall("tok", { ...back, room: "mk-other" }, z, STATELESS);
-    expect(other).toMatchObject({ kind: "link", external: true, embed: false });
-    expect((other as { url: string }).url).toContain("meeting-start");
-    const junk = await resolveCall("tok", back, z, "http://evil.test/statelessStart?key=mk-sdk");
-    expect((junk as { url: string }).url).toContain("meeting-start");
+    // no fallback to the ordinary start link: the wrong room, a forged link, or no kept link at all is simply "closed"
+    expect(await resolveCall("tok", { ...back, room: "mk-other" }, z, STATELESS)).toEqual({ kind: "unavailable", reason: "closed" });
+    expect(await resolveCall("tok", back, z, "http://evil.test/statelessStart?key=mk-sdk")).toEqual({ kind: "unavailable", reason: "closed" });
+    expect(await resolveCall("tok", back, z)).toEqual({ kind: "unavailable", reason: "closed" });
   });
 
   it("previewCall: a video-service room is made on 'Join now', the stand-in room is already there, no Zoho means not configured", () => {

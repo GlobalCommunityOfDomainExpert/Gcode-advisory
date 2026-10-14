@@ -20,6 +20,7 @@ const MESSAGES: Record<string, string> = {
   not_configured: "Video calls aren’t switched on for this environment yet.",
   busy: "The video service is busy right now. Please try again in a few minutes.",
   failed: "We couldn’t open the video room. Please try again in a minute.",
+  closed: "This room can’t be reopened from here. The host link only works in the browser that first opened the call, and only while the session is on.",
 };
 const POLL_MS = 5000;
 
@@ -109,6 +110,7 @@ export function VideoLobby({
         slug={slug}
         bookingId={bookingId}
         backHref={backHref}
+        role={role}
       />
     );
 

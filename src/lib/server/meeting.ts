@@ -12,7 +12,7 @@ import type { JoinInfo } from "@/lib/booking/types";
 export type CallLink =
   | { kind: "link"; url: string; external: boolean; embed?: boolean; keep?: string }
   | { kind: "join" }
-  | { kind: "unavailable"; reason: "not_configured" | "busy" | "failed" | "waiting" };
+  | { kind: "unavailable"; reason: "not_configured" | "busy" | "failed" | "waiting" | "closed" };
 
 /** The SDK's stateless start link: the only host link that works without a Zoho sign-in, and so the only one that can sit in an iframe. */
 const isStateless = (u: string | undefined): u is string => !!u && /\/statelessStart/.test(u) && isHttps(u);
@@ -78,8 +78,16 @@ export async function resolveCall(token: string, info: JoinInfo, client: Zoho | 
 
     const links = await client.getLinks(room);
     let url: string | undefined;
-    if (info.role === "expert") url = (sdk ? (keep ?? keptHostLink(savedHostLink, room)) : undefined) ?? links.startLink;
-    else url = links.joinLink;
+    if (info.role === "expert") {
+      if (sdk) {
+        // SDK sessions: the host only ever uses the stateless link (made now, or kept in this browser). The ordinary start link is NOT a
+        // fallback: opened after the meeting ended it restarts the room under whoever is signed in to the video service, in a tab of its own.
+        url = keep ?? keptHostLink(savedHostLink, room);
+        if (!url) return { kind: "unavailable", reason: "closed" };
+      } else {
+        url = links.startLink;
+      }
+    } else url = links.joinLink;
     if (!isHttps(url)) return { kind: "unavailable", reason: "failed" };
     // inside our page: the SDK's stateless host link, and (SDK sessions) the booker's join link; everything else opens in its own tab
     const embed = isStateless(url) || (sdk && info.role !== "expert");
