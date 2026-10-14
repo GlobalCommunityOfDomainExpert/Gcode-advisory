@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, PhoneOff, Star } from "lucide-react";
-import { Button, ButtonLink } from "@/components/atoms";
+import { ArrowLeft, Star } from "lucide-react";
+import { ButtonLink } from "@/components/atoms";
 import { RoomFrame } from "./room-frame";
 import { EndWarning, ExtendButton, ExtendedNote } from "./end-warning";
 import { mmss, useCallClock } from "@/lib/booking/use-call-clock";
@@ -11,7 +11,7 @@ import { mmss, useCallClock } from "@/lib/booking/use-call-clock";
 /** The video service's own addresses: only messages from these are trusted. */
 const VIDEO_ORIGIN = /^https:\/\/(meeting|meet)\.zoho\.(com|in|eu|com\.au|jp|sa)$|^https:\/\/meeting\.zohocloud\.ca$/;
 /** Words in a message from the video service that mean "this person's call is over". */
-const ENDED = /meeting[_ .-]?end|call[_ .-]?end|session[_ .-]?end|ended|left[_ .-]?meeting|leave[_ .-]?meeting|disconnect/i;
+const ENDED = /participant[_ .-]?left|meeting[_ .-]?end|call[_ .-]?end|session[_ .-]?end|ended|left[_ .-]?meeting|leave[_ .-]?meeting|disconnect/i;
 
 /**
  * The video page lives on another site, so we cannot read its DOM or its buttons. What we CAN see is every time the frame loads a new
@@ -33,11 +33,10 @@ const BACK_AFTER_MS = 2500;
 export function ZohoRoom({ title, who, url, endAt, slug, bookingId, backHref }: { title: string; who: string; url: string; endAt: string; slug: string; bookingId: number; backHref: string }) {
   const clock = useCallClock(slug, endAt, bookingId);
   const router = useRouter();
-  const [left, setLeft] = useState(false);       // the person pressed Leave
   const [over, setOver] = useState(false);       // the video service ended the call inside the frame
   const loads = useRef(0);
   const ended = clock.phase === "ended";
-  const inCall = !ended && !left && !over;
+  const inCall = !ended && !over;
 
   useEffect(() => {
     loads.current = 0;
@@ -95,27 +94,15 @@ export function ZohoRoom({ title, who, url, endAt, slug, bookingId, backHref }: 
       <RoomFrame title={title} who={who}>
         <main className="mx-auto grid w-full max-w-xl flex-1 items-center px-4 pb-10 text-center sm:px-6">
           <div className="space-y-4">
-            <p className="text-small font-bold tracking-widest text-white/60 uppercase">{ended ? "Session ended" : "You left the call"}</p>
-            <h1 className="text-heading font-extrabold">{ended ? "Time’s up. Thank you!" : "You’ve left the session"}</h1>
-            <p className="text-body text-white/70">
-              {ended
-                ? `Your session with ${who} has ended and the call was closed for you.`
-                : `The session with ${who} is still running for ${mmss(clock.left)}. You can rejoin.`}
+            <p className="text-small font-bold tracking-widest text-white/60 uppercase">Session ended</p>
+            <h1 className="text-heading font-extrabold">Time’s up. Thank you!</h1>
+            <p className="text-body text-white/70">Your session with {who} has ended and the call was closed for you.</p>
+            <p className="text-small text-white/60">
+              You can rate the session in My Bookings once it has been finalised, about 15 minutes after the scheduled end. We’ll also send a reminder.
             </p>
-            {ended && (
-              <p className="text-small text-white/60">
-                You can rate the session in My Bookings once it has been finalised, about 15 minutes after the scheduled end. We’ll also send a reminder.
-              </p>
-            )}
             <div className="flex flex-wrap justify-center gap-3 pt-2">
-              {!ended && (
-                <Button variant="light" size="sm" onClick={() => setLeft(false)}>
-                  Rejoin the call
-                </Button>
-              )}
-              <ButtonLink href={backHref} variant={ended ? "light" : "onDark"} size="sm">
-                {ended ? <Star className="size-4" aria-hidden="true" /> : <ArrowLeft className="size-4" aria-hidden="true" />}
-                {ended ? "Go to My Bookings to rate" : "Back to My Bookings"}
+              <ButtonLink href={backHref} variant="light" size="sm">
+                <Star className="size-4" aria-hidden="true" /> Go to My Bookings to rate
               </ButtonLink>
             </div>
           </div>
@@ -131,7 +118,7 @@ export function ZohoRoom({ title, who, url, endAt, slug, bookingId, backHref }: 
         <ExtendedNote clock={clock} />
         <ExtendButton clock={clock} />
       </div>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-4 sm:px-6">
+      <main className="flex w-full flex-1 flex-col">
         <iframe
           title="Video call"
           src={url}
@@ -141,14 +128,9 @@ export function ZohoRoom({ title, who, url, endAt, slug, bookingId, backHref }: 
             if (loads.current >= END_LOADS) setOver(true);
           }}
           allow="camera; microphone; display-capture; fullscreen; autoplay; clipboard-read; clipboard-write"
-          className="mt-3 min-h-[65vh] w-full flex-1 rounded-md bg-black/40 ring-1 ring-white/10"
+          className="min-h-[65vh] w-full flex-1 border-0 bg-black/40"
         />
       </main>
-      <footer className="flex items-center justify-center gap-3 bg-black/30 px-4 py-3">
-        <Button variant="danger" size="sm" onClick={() => setLeft(true)}>
-          <PhoneOff className="size-4" aria-hidden="true" /> Leave call
-        </Button>
-      </footer>
     </RoomFrame>
   );
 }
