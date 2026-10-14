@@ -58,7 +58,7 @@ export function PayoutAccountSettings({ account }: { account: PayoutAccount }) {
       {account.paymentsEnabled && !saved.hasAccount && (
         <div className="mb-6">
           <Banner tone="warning">
-            Your paid sessions are paused until you add a payout account. People cannot book them until then. Free sessions are not affected.
+            People can book your paid sessions, but your earnings wait until you add a payout account.
           </Banner>
         </div>
       )}

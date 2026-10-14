@@ -295,7 +295,7 @@ export default async function DashboardPage() {
   if (!complete && firstOpen) {
     step = { icon: UserRound, title: `Complete “${firstOpen.label}”`, text: "Fill in what’s missing so people can find and trust you.", action: "Continue", href: `/profile?tab=${firstOpen.id}` };
   } else if (isExpert && doc.paymentsEnabled && paidService && !doc.payoutSet) {
-    step = { icon: Wallet, title: "Add a payout account", text: "Paid sessions stay paused until you do.", action: "Add account", href: "/settings?section=payouts" };
+    step = { icon: Wallet, title: "Add a payout account", text: "You need one to receive your earnings.", action: "Add account", href: "/settings?section=payouts" };
   } else if (isExpert && doc.services.length === 0) {
     step = { icon: CalendarDays, title: "Set up your services", text: "Add a service and your weekly hours so people can book you.", action: "Add a service", href: "/profile?tab=services" };
   } else if (isExpert) {

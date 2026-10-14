@@ -321,7 +321,7 @@ export function ServicesTab({ engagement, services, daysOff, payoutSet, payments
       )}
       {paymentsEnabled && services.some(isPaid) && !payoutSet && (
         <Banner tone="warning">
-          <b>Paid sessions need a payout account.</b> Until you add one, paid services stay paused and people cannot book them. Add it in Account settings, under Payouts. Free services are unaffected.
+          <b>Add a payout account to receive your earnings.</b> People can book your paid sessions now, but we can only send the money once you add one in Account settings, under Payouts.
         </Banner>
       )}
       {services.length ? (

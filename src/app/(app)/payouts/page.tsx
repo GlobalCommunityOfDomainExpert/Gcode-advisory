@@ -143,7 +143,7 @@ export default async function PayoutsPage({ searchParams }: { searchParams: Prom
                 <div>
                   <h2 className="text-large text-text-primary font-bold">{rupees(e.availableMinor)} is ready to be paid out</h2>
                   <p className="text-body text-text-secondary mt-1 max-w-xl">
-                    Add a payout account and we’ll send your earnings on Monday. Until then, paid sessions stay paused. You can still offer free sessions.
+                    Add a payout account and we’ll send your earnings on Monday. Until then, your earnings wait here.
                   </p>
                 </div>
               </div>

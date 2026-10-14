@@ -77,7 +77,9 @@ export async function startPayment(token: string, bookingId: string, cf: Cashfre
         throw e;
       }
     }
-  } catch {
+  } catch (e) {
+    // the reason for the operator's log (never for the user): Cashfree's status, code and message. No keys, no card data.
+    console.error("startPayment: Cashfree order failed", { bookingId, orderId: data.orderId, env: cf.env, error: e instanceof CashfreeError ? { kind: e.kind, status: e.status, code: e.code, message: e.message } : String(e) });
     return { ok: false, status: 502, message: "We couldn’t start the payment. Please try again." };
   }
 
