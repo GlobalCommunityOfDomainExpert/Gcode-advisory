@@ -1,6 +1,15 @@
 import { ReactNode } from "react";
 import { Wordmark } from "@/components/layout";
 
+/** A message or lobby in the dark room, left-aligned like the "not open yet" page: a narrow column on the left of a wide page. */
+export function RoomPanel({ children }: { children: ReactNode }) {
+  return (
+    <main className="mx-auto grid w-full max-w-5xl flex-1 items-center px-4 pb-10 sm:px-6">
+      <div className="max-w-xl space-y-4">{children}</div>
+    </main>
+  );
+}
+
 /**
  * The call room's look, from the wireframe: a full-screen navy room with no app chrome. A slim header (wordmark, what the
  * session is, an optional status on the right) above whatever the room shows.
