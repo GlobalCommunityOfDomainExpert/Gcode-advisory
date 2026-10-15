@@ -15,7 +15,7 @@ export function Stars({ value, className = "" }: { value: number; className?: st
 }
 
 /** Pick 1 to 5 stars: a radio group, so it works with the keyboard and announces itself. */
-export function StarPicker({ value, onChange, label = "Your rating" }: { value: number; onChange: (n: number) => void; label?: string }) {
+export function StarPicker({ value, onChange, label = "Your rating", onDark = false }: { value: number; onChange: (n: number) => void; label?: string; onDark?: boolean }) {
   return (
     <div role="radiogroup" aria-label={label} className="flex items-center gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -28,7 +28,7 @@ export function StarPicker({ value, onChange, label = "Your rating" }: { value: 
           onClick={() => onChange(n)}
           className="focus-visible:ring-primary rounded-sm p-0.5 focus-visible:ring-2 focus-visible:outline-none"
         >
-          <Icon icon={Star} size="md" className={`size-8! transition-colors ${n <= value ? "text-warning fill-current" : "text-border-hover hover:text-warning"}`} />
+          <Icon icon={Star} size="md" className={`size-8! transition-colors ${n <= value ? "text-warning fill-current" : onDark ? "text-white/40 hover:text-warning" : "text-border-hover hover:text-warning"}`} />
         </button>
       ))}
     </div>

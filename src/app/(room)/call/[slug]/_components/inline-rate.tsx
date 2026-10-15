@@ -78,14 +78,14 @@ export function InlineRate({
   }
 
   return (
-    <div className="text-text-primary space-y-3 rounded-lg bg-white p-4">
+    <div className="space-y-3 rounded-lg border border-white/15 bg-white/10 p-4 text-white">
       <p className="text-body font-semibold">How was the session?</p>
-      <p className="text-small text-text-secondary">
+      <p className="text-small text-white/70">
         {role === "requester"
           ? "Your rating and comment are shown on the expert’s profile."
           : "Your rating is private: only GCODE sees it."}
       </p>
-      <StarPicker value={stars} onChange={setStars} />
+      <StarPicker value={stars} onChange={setStars} onDark />
       <div>
         <label
           htmlFor="inline-rate-comment"
@@ -100,17 +100,18 @@ export function InlineRate({
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           disabled={state === "waiting"}
+          className="border-white/25 bg-white/10 text-white placeholder:text-white/50 hover:border-white/40 focus-visible:border-white focus-visible:ring-white focus-visible:ring-offset-0"
         />
       </div>
       {state === "waiting" && (
-        <p role="status" className="text-small text-text-secondary">
+        <p role="status" className="text-small text-white/70">
           Saved. We’ll send it as soon as the session is finalised, about 15
           minutes after the scheduled end. Keep this page open, or rate it later
           from My Bookings.
         </p>
       )}
       {error && (
-        <p role="alert" className="text-small text-danger">
+        <p role="alert" className="text-small text-red-300">
           {error}
         </p>
       )}
