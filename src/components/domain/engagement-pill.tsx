@@ -1,12 +1,11 @@
-export type Engagement = "paid" | "free" | "community";
+export type Engagement = "provider" | "community";
 
 const ENGAGEMENT: Record<Engagement, [string, string]> = {
-  paid: ["Paid sessions", "bg-primary-light text-primary"],
-  free: ["Free sessions", "bg-success-light text-success"],
+  provider: ["Service provider", "bg-primary-light text-primary"],
   community: ["Community member", "bg-bg-light text-text-secondary"],
 };
 
-/** How an expert participates: paid sessions, free sessions, or community member. */
+/** How an expert participates: service provider (paid and/or free sessions) or community member. */
 export function EngagementPill({ type }: { type: Engagement }) {
   const [label, cls] = ENGAGEMENT[type];
   return (

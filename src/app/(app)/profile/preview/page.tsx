@@ -24,7 +24,7 @@ function minutes(label: string): number {
 function toPublic(doc: ProfileDoc, userId: string, name: string): PublicExpert {
   const f = (k: string) => clean(doc.fields[k]);
   const engagement = f("engagement").toUpperCase();
-  const eng = engagement === "PAID" || engagement === "FREE" || engagement === "COMMUNITY" ? engagement : null;
+  const eng = engagement === "PROVIDER" || engagement === "COMMUNITY" ? engagement : null;
   const services: BookableService[] = doc.services
     .filter((s) => clean(s.type))
     .map((s, i) => ({

@@ -231,7 +231,7 @@ export interface IntroProps {
   roleLabel: string;
   /** "Next available · Sat, 10 Oct · 9:00 am" when bookable, else null. */
   availability?: string | null;
-  /** "Free sessions", "Paid sessions", "Community member". */
+  /** "Service provider", "Community member". */
   engagement?: string | null;
   /** Current organisation and school, shown at the right of the intro. */
   orgs: string[];

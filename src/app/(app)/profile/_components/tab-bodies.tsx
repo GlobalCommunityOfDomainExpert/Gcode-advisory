@@ -64,7 +64,7 @@ export function TabBody({ section, ctx }: { section: SectionId; ctx: TabContext 
     case "expertise":
       return (
         <div className="space-y-5">
-          <EngagementChooser value={f("engagement")} onChange={(v) => setField("engagement", v)} paymentsEnabled={doc.paymentsEnabled} />
+          <EngagementChooser value={f("engagement")} onChange={(v) => setField("engagement", v)} />
           <ChipGroup id="grp-domains" label="Primary domains" hint="Select all that apply." options={DOMAINS} selected={doc.lists.domains} onToggle={(v) => toggle("domains", v)} />
           <TextField id="f-currentTitle" label="Current title" icon={Briefcase} value={f("currentTitle")} onChange={(v) => setField("currentTitle", v)} placeholder="e.g. Head of Strategy" maxLength={120} />
           <SkillsField skills={doc.lists.skills} onChange={(s) => setList("skills", s)} />

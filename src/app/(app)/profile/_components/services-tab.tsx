@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarClock, CalendarOff, CalendarRange, ChevronDown, ChevronUp, Copy, HeartHandshake, RefreshCw, Users, Wallet } from "lucide-react";
+import { CalendarClock, CalendarOff, CalendarRange, ChevronDown, ChevronUp, Copy, RefreshCw, Users, Wallet } from "lucide-react";
 import { Button, Checkbox, Input, Label, RemoveIconButton, Select } from "@/components/atoms";
 import { Banner, EmptyState, FormField, IconTile } from "@/components/molecules";
 import { BUFFERS, DURATIONS, SERVICE_TYPES, TIME_OPTS } from "@/lib/profile/options";
@@ -12,8 +12,7 @@ import { focusRing } from "@/lib/ui";
 import { Grid2, SearchSelect } from "./fields";
 
 export const ENGAGE_OPTS: { value: Engagement; title: string; sub: string; icon: typeof Wallet }[] = [
-  { value: "paid", title: "Paid sessions", sub: "Set a rate and get booked", icon: Wallet },
-  { value: "free", title: "Free sessions", sub: "Volunteer time for learners", icon: HeartHandshake },
+  { value: "provider", title: "Service provider", sub: "Offer sessions and get booked", icon: Wallet },
   { value: "community", title: "Community member", sub: "Listed on GCODE, not bookable", icon: Users },
 ];
 
@@ -43,19 +42,19 @@ function ChoiceCard({ selected, icon, title, sub, onSelect, disabled = false }: 
   );
 }
 
-/** While payments are off the paid option is shown but cannot be chosen. */
-export function EngagementChooser({ value, onChange, paymentsEnabled }: { value: string; onChange: (v: Engagement) => void; paymentsEnabled: boolean }) {
+/** Provider covers paid and free sessions: the rate on each service decides. */
+export function EngagementChooser({ value, onChange }: { value: string; onChange: (v: Engagement) => void }) {
+  const current = value === "community" ? "community" : value ? "provider" : "";   // a draft saved before the change may still say paid or free
   return (
-    <FormField label="How would you like to participate?" htmlFor="engage" hint="Only experts offering sessions can be booked. You can change this any time.">
-      <div id="engage" role="radiogroup" aria-label="Participation" className="grid gap-3 sm:grid-cols-3">
+    <FormField label="How would you like to participate?" htmlFor="engage" hint="Only service providers can be booked. You can change this any time.">
+      <div id="engage" role="radiogroup" aria-label="Participation" className="grid gap-3 sm:grid-cols-2">
         {ENGAGE_OPTS.map((o) => (
           <ChoiceCard
             key={o.value}
-            selected={value === o.value}
+            selected={current === o.value}
             icon={o.icon}
             title={o.title}
-            sub={o.value === "paid" && !paymentsEnabled ? "Coming soon: free sessions for now" : o.sub}
-            disabled={o.value === "paid" && !paymentsEnabled && value !== "paid"}
+            sub={o.sub}
             onSelect={() => onChange(o.value)}
           />
         ))}
@@ -304,7 +303,7 @@ export function ServicesTab({ engagement, services, daysOff, payoutSet, payments
         <Banner tone="info">
           You’ve chosen to join as a <b>community member</b>: you’re listed on GCODE but can’t be booked, so no services are needed.
         </Banner>
-        <Button type="button" variant="secondary" onClick={() => onEngagement(paymentsEnabled ? "paid" : "free")}>
+        <Button type="button" variant="secondary" onClick={() => onEngagement("provider")}>
           Offer sessions instead
         </Button>
       </div>

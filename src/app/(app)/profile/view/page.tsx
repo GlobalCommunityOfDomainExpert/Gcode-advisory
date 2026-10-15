@@ -30,7 +30,7 @@ function OwnerSection(p: { title: string; has: boolean; tab: string; prompt: str
   );
 }
 
-const ENGAGEMENT: Record<string, string> = { paid: "Paid sessions", free: "Free sessions", community: "Community member" };
+const ENGAGEMENT: Record<string, string> = { provider: "Service provider", community: "Community member" };
 
 /** "Mon, Wed · 10:00-12:00" from a service's weekly hours. */
 function whenText(s: Service): string {
@@ -144,7 +144,7 @@ export default async function ProfileViewPage() {
             photoUrl={photo}
             roleLabel={ROLE_LABEL[role]}
             availability={availability}
-            engagement={role === "expert" && f("engagement") ? (f("engagement") === "paid" && !doc.paymentsEnabled ? ENGAGEMENT.free : ENGAGEMENT[f("engagement")]) : null}
+            engagement={role === "expert" && f("engagement") ? ENGAGEMENT[f("engagement")] : null}
             orgs={orgs}
             editHref={editTab(editTabForIntro)}
             rating={received ? { average: received.average as number, count: received.count } : null}

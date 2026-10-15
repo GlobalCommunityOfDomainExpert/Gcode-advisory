@@ -5,7 +5,7 @@ import { Cell, CellGrid } from "../../_cell";
 const meta = {
   component: EngagementPill,
   tags: ["ai-generated"],
-  args: { type: "paid" },
+  args: { type: "provider" },
 } satisfies Meta<typeof EngagementPill>;
 
 export default meta;
@@ -15,7 +15,7 @@ type Story = StoryObj<typeof meta>;
 export const States: Story = {
   render: () => (
     <CellGrid>
-      {(["paid", "free", "community"] as const).map((t) => (
+      {(["provider", "community"] as const).map((t) => (
         <Cell key={t} label={t} kind="variant"><EngagementPill type={t} /></Cell>
       ))}
     </CellGrid>

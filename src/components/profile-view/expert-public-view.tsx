@@ -7,7 +7,7 @@ import { ShareButton } from "@/components/profile-view/share-button";
 import { fmtDay, fmtTime, rupees } from "@/lib/booking/time";
 import type { PublicExpert } from "@/lib/booking/types";
 
-const ENGAGEMENT = { PAID: "Paid sessions", FREE: "Free sessions", COMMUNITY: "Community member" } as const;
+const ENGAGEMENT = { PROVIDER: "Service provider", COMMUNITY: "Community member" } as const;
 
 /**
  * An expert's public page, laid out like the wireframe's visitor profile: the one layout behind /experts/<slug> and the owner's
@@ -16,7 +16,7 @@ const ENGAGEMENT = { PAID: "Paid sessions", FREE: "Free sessions", COMMUNITY: "C
  */
 export function ExpertPublicView({ e, session, preview = false, banner }: { e: PublicExpert; session: { userId: string } | null; preview?: boolean; banner?: ReactNode }) {
   const mine = !preview && session?.userId === e.userId;
-  const free = !e.paymentsEnabled || e.engagement === "FREE";
+  const free = !e.paymentsEnabled;
   const canBook = e.bookable && e.services.length > 0 && !mine;
   const next = e.services.map((s) => s.nextSlotAt).filter((x): x is string => !!x).sort()[0] ?? null;
   const nextLabel = next ? `${fmtDay(next)} · ${fmtTime(next)}` : null;
@@ -82,7 +82,7 @@ export function ExpertPublicView({ e, session, preview = false, banner }: { e: P
             photoUrl={e.photoUrl}
             roleLabel="Domain Expert"
             availability={e.status === "BOOKABLE" && nextLabel ? `Next available · ${nextLabel}` : null}
-            engagement={e.engagement === "COMMUNITY" ? ENGAGEMENT.COMMUNITY : e.engagement ? (free ? ENGAGEMENT.FREE : ENGAGEMENT.PAID) : null}   // while payments are off, every session is free
+            engagement={e.engagement ? ENGAGEMENT[e.engagement] : null}   // while payments are off, every session is free
             orgs={orgs}
             rating={e.rating}
             actions={actions}

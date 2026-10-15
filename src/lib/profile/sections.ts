@@ -65,6 +65,12 @@ function url(value: unknown): string | null {
 
 const isDate = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`));
 
+/** Service provider or community member. The old paid / free values are read as provider. */
+function participation(value: unknown): string | null {
+  const v = oneOf(value, ["provider", "community", "paid", "free"]);
+  return v === "paid" || v === "free" ? "provider" : v;
+}
+
 function oneOf(value: unknown, allowed: string[]): string | null {
   if (value === undefined || value === null || value === "") return "";
   return typeof value === "string" && allowed.includes(value) ? value : null;
@@ -168,7 +174,7 @@ export function parseSection(role: ProfileRole, section: SectionId, body: unknow
         ["fullName"],
       );
     case "expertise": {
-      const r = pickFields(body, { engagement: (v) => oneOf(v, ["paid", "free", "community"]), currentTitle: short(120) }, { engagement: "Participation", currentTitle: "Current title" });
+      const r = pickFields(body, { engagement: (v) => participation(v), currentTitle: short(120) }, { engagement: "Participation", currentTitle: "Current title" });
       if (typeof r === "string") return bad(r);
       const lists: Partial<ProfileLists> = {};
       if ("domains" in body) {
@@ -297,7 +303,7 @@ export function parseSection(role: ProfileRole, section: SectionId, body: unknow
     case "services": {
       const patch: SectionPatch = {};
       if ("engagement" in body) {
-        const e = oneOf(body.engagement, ["paid", "free", "community"]);
+        const e = participation(body.engagement);
         if (e === null) return bad("Participation is not valid.");
         patch.fields = { engagement: e };
       }

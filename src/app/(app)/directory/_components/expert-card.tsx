@@ -11,8 +11,8 @@ import { fmtDay, fmtTime, rupees } from "@/lib/booking/time";
  */
 export function ExpertCardView({ expert, paymentsEnabled }: { expert: ExpertCard; paymentsEnabled: boolean }) {
   // While payments are off every bookable service is free, whatever the expert chose on their profile.
-  const freeOnly = !paymentsEnabled || expert.engagement === "FREE";
-  const hasFreeOption = paymentsEnabled && expert.engagement !== "FREE" && expert.fromPriceMinor === 0;
+  const freeOnly = !paymentsEnabled;
+  const hasFreeOption = paymentsEnabled && expert.fromPriceMinor === 0;
   const tags = expert.skills.length ? expert.skills : expert.domains;
   const next = expert.nextSlotAt ?? null;
 

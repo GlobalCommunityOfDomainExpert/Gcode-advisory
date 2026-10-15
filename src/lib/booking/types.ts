@@ -15,7 +15,7 @@ export interface ExpertCard {
   bio: string | null;
   bookable: boolean;
   /** What the expert chose on their profile: paid sessions, free sessions, or community member. */
-  engagement: "PAID" | "FREE" | "COMMUNITY" | null;
+  engagement: "PROVIDER" | "COMMUNITY" | null;
   status: ExpertStatus;
   skills: string[];
   domains: string[];

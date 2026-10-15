@@ -17,7 +17,7 @@ export const ROLE_LABEL: Record<ProfileRole, string> = {
   institute: "Institution",
 };
 
-export type Engagement = "paid" | "free" | "community";
+export type Engagement = "provider" | "community";
 
 export interface CareerItem {
   title: string;
