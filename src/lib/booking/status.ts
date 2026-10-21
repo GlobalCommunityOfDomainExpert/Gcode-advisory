@@ -16,6 +16,7 @@ export const STATUS_TONE: Record<BookingStatus, BadgeTone> = {
 /** The status as the viewer should read it. A waiting new time reads "Reschedule requested" (you were asked) or "Reschedule sent". */
 export function statusText(b: BookingView): string {
   if (b.reschedule) return b.reschedule.byMe ? "Reschedule sent" : "Reschedule requested";
+  if (b.rescue && b.role === "requester") return "Payment safe";
   if (b.status === "PENDING") return b.role === "expert" ? "Needs your answer" : "Waiting for the expert";
   if (b.status === "COMPLETED" && b.outcome) {
     const mine = b.role === "expert" ? "EXPERT" : "REQUESTER";

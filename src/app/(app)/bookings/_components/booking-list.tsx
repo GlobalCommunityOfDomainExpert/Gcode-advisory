@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarClock, Check } from "lucide-react";
@@ -11,10 +11,12 @@ import { Stars } from "@/components/domain";
 import { Toast } from "@/components/layout";
 import { RateDialog, ReportDialog } from "./feedback-dialogs";
 import { RescheduleDialog } from "./reschedule-dialog";
-import { actOnBooking, answerReschedule } from "@/lib/booking/client";
+import { RescueDialog } from "./rescue-dialog";
+import { QuickRescue } from "./quick-rescue";
+import { actOnBooking, answerReschedule, getCancelQuote } from "@/lib/booking/client";
 import { dateColumn, fmtDay, fmtTime, isToday, rupees } from "@/lib/booking/time";
 import { statusText, STATUS_TONE } from "@/lib/booking/status";
-import type { BookingAction, BookingReason, BookingStatus, BookingView } from "@/lib/booking/types";
+import type { BookingAction, BookingReason, BookingStatus, BookingView, CancelQuote } from "@/lib/booking/types";
 
 /** The stripe on the card's left edge: amber needs a step, green is confirmed, red is declined or cancelled. */
 const STRIPE: Record<BookingStatus, string> = {
@@ -43,7 +45,7 @@ interface Pending {
   action: "decline" | "cancel";
 }
 
-export function BookingList({ items, reasons, grouped = false }: { items: BookingView[]; reasons: BookingReason[]; grouped?: boolean }) {
+export function BookingList({ items, reasons, grouped = false, initialNotice, openRescueId }: { items: BookingView[]; reasons: BookingReason[]; grouped?: boolean; initialNotice?: string; openRescueId?: number }) {
   const router = useRouter();
   const [busy, setBusy] = useState<number | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -53,9 +55,33 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
   const [rating, setRating] = useState<BookingView | null>(null);
   const [reporting, setReporting] = useState<BookingView | null>(null);
   const [rescheduling, setRescheduling] = useState<BookingView | null>(null);
+  // ?rescue=<id> (from an expert's profile, "See all options") opens the Keep your session dialog straight away
+  const [rescuing, setRescuing] = useState<BookingView | null>(() => items.find((b) => b.id === openRescueId && b.actions.includes("rescue")) ?? null);
   // before the reason form, someone who could just move the session is offered that first (they chose to cancel: it is one click to carry on)
   const [skipOffer, setSkipOffer] = useState(false);
-  const [notice, setNotice] = useState<{ message: string; tone: "success" | "info" } | null>(null);
+  const [notice, setNotice] = useState<{ message: string; tone: "success" | "info" } | null>(initialNotice ? { message: initialNotice, tone: "success" } : null);
+  // what cancelling costs right now, from the cancel rules: asked when a paid booking's Cancel dialog opens, so nobody is surprised
+  const [quoted, setQuoted] = useState<{ id: number; quote: CancelQuote } | null>(null);
+
+  // the one-time links (?kept=, ?rescue=) have done their job: keep the address clean so a refresh does not repeat them
+  useEffect(() => {
+    if (!initialNotice && openRescueId === undefined) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("kept");
+    url.searchParams.delete("rescue");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search);
+  }, [initialNotice, openRescueId]);
+
+  const quoteId = pending?.action === "cancel" && pending.booking.priceMinor > 0 ? pending.booking.id : null;
+  useEffect(() => {
+    if (quoteId === null) return;
+    const ctl = new AbortController();
+    void getCancelQuote(quoteId, ctl.signal).then((res) => {
+      if (res.ok && res.data) setQuoted({ id: quoteId, quote: res.data });
+    });
+    return () => ctl.abort();
+  }, [quoteId]);
+  const quote = quoted && quoted.id === quoteId ? quoted.quote : null;
 
   const options = pending
     ? reasons.filter((r) => r.action === pending.action && r.actor === (pending.booking.role === "expert" ? "expert" : "requester"))
@@ -124,8 +150,9 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
   const row = (b: BookingView) => {
     const d = dateColumn(b.startAt);
     const first = who(b).split(" ")[0];
-    const tone: BadgeTone = b.reschedule ? "warning" : STATUS_TONE[b.status];
-    const stripe = b.reschedule ? "border-l-warning" : STRIPE[b.status];
+    const saved = !!b.rescue && b.role === "requester";
+    const tone: BadgeTone = saved ? "success" : b.reschedule ? "warning" : STATUS_TONE[b.status];
+    const stripe = saved ? "border-l-success" : b.reschedule ? "border-l-warning" : STRIPE[b.status];
     return (
       <div key={b.id} className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-x-5 [&:last-child_.tl-line]:hidden">
         <div className="flex flex-col items-center pt-1 text-center">
@@ -180,6 +207,11 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
                     {b.report.status === "REJECTED" && <span className="text-text-secondary">Report decided: no refund.{b.report.note ? ` ${b.report.note}` : ""}</span>}
                   </p>
                 )}
+                {b.rescue && (
+                  <p className="text-small text-text-secondary mt-1">
+                    Choose a new time or expert by <span className="text-text-primary font-semibold">{fmtDay(b.rescue.expiresAt)}, {fmtTime(b.rescue.expiresAt)}</span>, or we refund you then.
+                  </p>
+                )}
                 {b.refund && (
                   <p className="text-small mt-1 font-medium text-success">
                     {b.refund.status === "DONE"
@@ -202,6 +234,11 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
                   <ButtonLink href={`/call/${b.callSlug}`} size="sm" variant={isToday(b.startAt) ? "primary" : "secondary"}>
                     Join call
                   </ButtonLink>
+                )}
+                {b.actions.includes("rescue") && (
+                  <Button size="sm" onClick={() => setRescuing(b)}>
+                    Keep your session
+                  </Button>
                 )}
                 {b.actions.includes("accept") && (
                   <Button size="sm" variant="success" loading={busy === b.id} onClick={() => run(b, "accept")}>
@@ -239,7 +276,7 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
                   </Button>
                 )}
                 {/* Rescheduling is offered inside Cancel and Decline, so it is for people who really need it, not a casual button on every card */}
-                {b.role === "requester" && (b.status === "CANCELLED" || b.status === "DECLINED" || b.status === "EXPIRED") && (
+                {b.role === "requester" && !b.rescue && (b.status === "CANCELLED" || b.status === "DECLINED" || b.status === "EXPIRED") && (
                   <ButtonLink href={`/book/${b.expertId}`} size="sm" variant="outline">
                     <Icon icon={CalendarClock} size="sm" /> Book a new time
                   </ButtonLink>
@@ -277,8 +314,21 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
     );
   };
 
+  const rescuable = items.find((b) => b.role === "requester" && b.actions.includes("rescue"));
+
   return (
     <>
+      {rescuable && (
+        <QuickRescue
+          key={rescuable.id}
+          booking={rescuable}
+          onSeeOptions={() => setRescuing(rescuable)}
+          onDone={(message) => {
+            setNotice({ message, tone: "success" });
+            router.refresh();
+          }}
+        />
+      )}
       {error && !pending && (
         <div className="mb-4">
           <Banner tone="danger" onDismiss={() => setError(null)}>
@@ -305,6 +355,7 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
 
       <RescheduleDialog booking={rescheduling} reasons={reasons} onClose={() => setRescheduling(null)} onDone={() => router.refresh()} onSent={(message) => setNotice({ message, tone: "success" })} />
       {notice && <Toast message={notice.message} tone={notice.tone} onDismiss={() => setNotice(null)} />}
+      <RescueDialog booking={rescuing} onClose={() => setRescuing(null)} onDone={(message) => { setNotice({ message, tone: "success" }); router.refresh(); }} />
       <RateDialog booking={rating} onClose={() => setRating(null)} onDone={() => router.refresh()} />
       <ReportDialog booking={reporting} onClose={() => setReporting(null)} onDone={() => router.refresh()} />
 
@@ -354,9 +405,21 @@ export function BookingList({ items, reasons, grouped = false }: { items: Bookin
               </div>
             ) : (
               <>
+              {quote && quote.paidMinor > 0 && (
+                <Banner tone={quote.keptMinor > 0 ? "warning" : "info"}>
+                  {quote.by === "EXPERT"
+                    ? `The booker is refunded in full (${rupees(quote.refundMinor)}). You are not paid for this session.`
+                    : quote.keptMinor > 0
+                      ? `If you cancel now you get ${rupees(quote.refundMinor)} back. ${rupees(quote.keptMinor)} is kept: ${quote.note.charAt(0).toLowerCase() + quote.note.slice(1)}.`
+                      : `If you cancel now you get the full ${rupees(quote.refundMinor)} back.`}
+                </Banner>
+              )}
               <p className="text-small text-text-secondary">
                 {(pending.booking.role === "expert" ? pending.booking.requesterName : pending.booking.expertName)} will be told, with your reason.
                 {pending.booking.role === "expert" && pending.action !== "decline" ? " They can book a new time right away." : ""}
+                {pending.booking.role === "expert" && pending.booking.priceMinor > 0 && pending.booking.paid
+                  ? " They have paid, so their money stays safe and they are offered another time or another expert at the same price. They are refunded only if they choose not to, or don’t answer."
+                  : ""}
               </p>
               <fieldset className="space-y-2">
                 <legend className="text-small text-text-primary mb-1 font-semibold">Reason</legend>
