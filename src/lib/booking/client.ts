@@ -1,5 +1,5 @@
 /** Browser side of the booking API. Talks only to our own /api/booking and /api/payments routes. */
-import type { BookingAction, CallClockInfo, BookingRating, BookingView, DayCount, NextDay, PaymentOrder, ProblemReport, ReportType, Slot } from "./types";
+import type { BookingAction, CallClockInfo, CancelQuote, RescueOptions, BookingRating, BookingView, DayCount, NextDay, PaymentOrder, ProblemReport, ReportType, Slot } from "./types";
 
 export interface ApiResult<T> {
   ok: boolean;
@@ -48,6 +48,18 @@ export const confirmStubPayment = (orderId: string, outcome: "SUCCESS" | "FAILUR
 /** Accept needs no reason; decline and cancel take a code from the pick list and, for "Other", a note. */
 export const actOnBooking = (id: number, action: BookingAction, reason?: { reason: string; note: string }) =>
   call<BookingView>(`/api/booking/${id}/${action}`, post("", reason ?? {}));
+
+/** What cancelling would cost right now (the refund and any part that is kept). Read-only. */
+export const getCancelQuote = (id: number, signal?: AbortSignal) => call<CancelQuote>(`/api/booking/${id}/cancel-quote`, { signal });
+
+/** A paid session the expert could not keep: what the booker can pick instead of a refund. */
+export const getRescueOptions = (id: number, signal?: AbortSignal) => call<RescueOptions>(`/api/booking/${id}/rescue`, { signal });
+
+/** Keep the paid session: the same booking becomes a request to that expert at that time. */
+export const rebookRescue = (id: number, body: { serviceId: number; startAt: string }) => call<BookingView>(`/api/booking/${id}/rescue/rebook`, post("", body));
+
+/** "No thanks, refund me": the refund starts now. */
+export const refundRescue = (id: number) => call<BookingView>(`/api/booking/${id}/rescue/refund`, post("", {}));
 
 /** Suggest a new time for a confirmed session. The other person has to accept; the original time stands until then. */
 export const proposeReschedule = (id: number, body: { startAt: string; reason: string; note: string }) => call<BookingView>(`/api/booking/${id}/reschedule`, post("", body));

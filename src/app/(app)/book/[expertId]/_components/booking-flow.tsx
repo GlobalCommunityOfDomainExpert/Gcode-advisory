@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, CalendarClock, CheckCircle2, CreditCard, Lock, RotateCcw, Timer, UserCheck } from "lucide-react";
 import { Avatar, Button, ButtonLink, Divider, Icon, SectionLabel, Spinner, Textarea } from "@/components/atoms";
 import { Banner, FormField, StepIndicator } from "@/components/molecules";
@@ -17,7 +18,8 @@ import { Calendar } from "./calendar";
 
 type StepName = "time" | "review" | "pay" | "done";
 
-export function BookingFlow({ expert, initialServiceId }: { expert: ExpertPage; initialServiceId: number }) {
+export function BookingFlow({ expert, initialServiceId, rescue }: { expert: ExpertPage; initialServiceId: number; /** The service that is the viewer's already-paid session: choosing it continues that session instead. */ rescue?: { serviceId: number; href: string } }) {
+  const router = useRouter();
   const today = istDay();
   const start = parseDay(today);
 
@@ -181,7 +183,7 @@ export function BookingFlow({ expert, initialServiceId }: { expert: ExpertPage; 
                       type="button"
                       role="radio"
                       aria-checked={s.id === service.id}
-                      onClick={() => pickService(s.id)}
+                      onClick={() => (rescue?.serviceId === s.id ? router.push(rescue.href) : pickService(s.id))}
                       className={cn(
                         "flex w-full items-center justify-between gap-4 rounded-md border-2 p-4 text-left transition-colors",
                         focusRing,
@@ -193,8 +195,11 @@ export function BookingFlow({ expert, initialServiceId }: { expert: ExpertPage; 
                         <span className="text-small text-text-secondary">
                           {s.durationMin} min{s.bufferMin ? ` · ${s.bufferMin} min buffer between sessions` : ""}
                         </span>
+                        {rescue?.serviceId === s.id && <span className="text-small text-success mt-1 block font-semibold">Your paid session. Continue with nothing to pay.</span>}
                       </span>
-                      <span className={cn("text-body shrink-0 font-bold", s.priceMinor === 0 ? "text-success" : "text-text-primary")}>{rupees(s.priceMinor)}</span>
+                      <span className={cn("text-body shrink-0 font-bold", rescue?.serviceId === s.id ? "text-success" : s.priceMinor === 0 ? "text-success" : "text-text-primary")}>
+                        {rescue?.serviceId === s.id ? "Continue" : rupees(s.priceMinor)}
+                      </span>
                     </button>
                   ))}
                 </div>

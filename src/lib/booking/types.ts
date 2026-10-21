@@ -144,6 +144,8 @@ export interface BookingView {
   rescheduled?: boolean;
   /** A new time somebody suggested, still waiting for an answer. The original time stands until it is accepted. */
   reschedule?: RescheduleProposal;
+  /** The booker only: a paid session the expert could not keep. Nothing is refunded until the booker chooses or this runs out. */
+  rescue?: { status: "OPEN"; reason: "DECLINED" | "EXPERT_CANCELLED" | "NO_RESPONSE"; expiresAt: string };
   /** The rating this person gave the other one. */
   rating?: BookingRating;
   /** Experts only: the rating the booker gave them. A booker never sees what an expert said about them (it is internal). */
@@ -193,7 +195,7 @@ export const REPORT_TYPES: { value: ReportType; label: string; hint: string }[] 
 ];
 
 export type BookingOutcome = "ATTENDED" | "EXPERT_NO_SHOW" | "REQUESTER_NO_SHOW" | "BOTH_NO_SHOW";
-export type BookingAction = "accept" | "decline" | "cancel" | "join" | "rate" | "report" | "reschedule" | "reschedule_accept" | "reschedule_decline" | "reschedule_withdraw";
+export type BookingAction = "accept" | "decline" | "cancel" | "join" | "rate" | "report" | "reschedule" | "reschedule_accept" | "reschedule_decline" | "reschedule_withdraw" | "rescue" | "rescue_refund";
 export type BookingTab = "upcoming" | "completed" | "cancelled";
 export const BOOKING_TABS: BookingTab[] = ["upcoming", "completed", "cancelled"];
 
@@ -339,4 +341,45 @@ export interface Earnings {
   /** Newest first, the last 50 sessions that earned money. Refunded sessions are not listed. */
   sessions: EarningRow[];
   payouts: { id: number; ref: string; amountMinor: number; status: PayoutStatus; to: string; createdAt: string; paidAt: string | null; utr: string | null; note: string | null }[];
+}
+
+/** What cancelling a booking would cost right now, from the cancel rules. Money in paise; nothing is kept for a free booking. */
+export interface CancelQuote {
+  by: "REQUESTER" | "EXPERT";
+  paidMinor: number;
+  refundMinor: number;
+  keptMinor: number;
+  refundPct: number;
+  hoursBefore: number;
+  /** The rule in words, for example "Booker cancels less than 24 hours before the start". */
+  note: string;
+}
+
+/** What the booker can pick instead of a refund: the same expert at another time, or other experts at exactly the same price. */
+export interface RescueOptions {
+  expiresAt: string;
+  priceMinor: number;
+  durationMin: number;
+  sameExpert?: { serviceId: number; expertId: string; slots: string[] };
+  others: RescueExpert[];
+}
+
+export interface RescueExpert {
+  serviceId: number;
+  expertId: string;
+  name: string;
+  headline: string | null;
+  ratingAvg: number | null;
+  ratingCount: number;
+  durationMin: number;
+  slots: string[];
+  /** Domains and skills they share with the expert who could not make it (at most 3 each). */
+  slug?: string;
+  photoUrl?: string | null;
+  location?: string | null;
+  bio?: string | null;
+  skills?: string[];
+  domains?: string[];
+  sharedDomains?: string[];
+  sharedSkills?: string[];
 }

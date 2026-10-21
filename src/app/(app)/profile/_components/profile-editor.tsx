@@ -179,7 +179,7 @@ export function ProfileEditor({ initial, initialTab, displayName, accountEmail }
   const items = live.per.map((p) => ({ id: p.id, label: p.label, icon: TAB_ICON[p.id], filled: p.filled, total: p.total }));
   const doneSections = live.per.filter((p) => p.filled === p.total).length;
   const sectionsLeft = live.per.length - doneSections;
-  const heading = doc.role === "institute" ? doc.fields.instName || displayName : displayName;
+  const heading = doc.role === "institute" ? doc.fields.instName || displayName : doc.role === "startup" ? doc.fields.startupName || displayName : displayName;
   const visibility = TAB_VISIBILITY[section.id] ?? "public";
 
   return (

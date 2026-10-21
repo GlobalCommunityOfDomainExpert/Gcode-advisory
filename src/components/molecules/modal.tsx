@@ -16,7 +16,7 @@ export interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   /** Panel max width: `md` 28rem, `lg` 32rem, `xl` 48rem. */
-  size?: "md" | "lg" | "xl";
+  size?: "md" | "lg" | "xl" | "2xl";
   /** Replaces the default body spacing and 70vh scroll cap. Pass `p-0` for content that manages its own layout. */
   bodyClassName?: string;
   /** Replaces the default `rounded-md`, and is where to add e.g. `overflow-hidden`. */
@@ -27,7 +27,7 @@ export interface ModalProps {
   inline?: boolean;
 }
 
-const sizeClasses = { md: "max-w-md", lg: "max-w-lg", xl: "max-w-3xl" };
+const sizeClasses = { md: "max-w-md", lg: "max-w-lg", xl: "max-w-3xl", "2xl": "max-w-5xl" };
 
 /**
  * The one dialog primitive: backdrop click and Escape close it, the page behind stops scrolling, focus moves into the

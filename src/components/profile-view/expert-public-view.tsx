@@ -14,7 +14,20 @@ const ENGAGEMENT = { PROVIDER: "Service provider", COMMUNITY: "Community member"
  * "Preview" before publishing. In preview nothing can be booked or shared, the buttons are inert, and `banner` (the preview bar)
  * sits on top. Sections with nothing in them are hidden.
  */
-export function ExpertPublicView({ e, session, preview = false, banner }: { e: PublicExpert; session: { userId: string } | null; preview?: boolean; banner?: ReactNode }) {
+export function ExpertPublicView({
+  e,
+  session,
+  preview = false,
+  banner,
+  rescue,
+}: {
+  e: PublicExpert;
+  session: { userId: string } | null;
+  preview?: boolean;
+  banner?: ReactNode;
+  /** A paid session of the viewer's is waiting to be kept: this service is that session, so its button carries on with it (no new booking, nothing to pay). */
+  rescue?: { serviceId: number; href: string };
+}) {
   const mine = !preview && session?.userId === e.userId;
   const free = !e.paymentsEnabled;
   const canBook = e.bookable && e.services.length > 0 && !mine;
@@ -32,9 +45,9 @@ export function ExpertPublicView({ e, session, preview = false, banner }: { e: P
     duration: duration(s.durationMin),
     price: priceText(s.priceMinor),
     free: s.priceMinor === 0,
-    next: s.nextSlotAt ? `Next: ${fmtDay(s.nextSlotAt)} · ${fmtTime(s.nextSlotAt)}` : null,
-    href: preview ? "/profile/preview" : session ? `/book/${e.userId}?service=${s.id}` : "/sign-in",
-    cta: preview || session ? "Book" : "Sign in",
+    next: rescue?.serviceId === s.id ? "Your payment is safe. Nothing to pay." : s.nextSlotAt ? `Next: ${fmtDay(s.nextSlotAt)} · ${fmtTime(s.nextSlotAt)}` : null,
+    href: rescue?.serviceId === s.id ? rescue.href : preview ? "/profile/preview" : session ? `/book/${e.userId}?service=${s.id}` : "/sign-in",
+    cta: rescue?.serviceId === s.id ? "Continue" : preview || session ? "Book" : "Sign in",
   }));
 
   const bookButton = preview ? (

@@ -71,7 +71,7 @@ export default async function ProfileViewPage() {
   const complete = pct === 100;
   const isOrg = role === "institute";
   const isPerson = role === "expert" || role === "intern";
-  const name = (isOrg ? f("instName") : f("fullName")) || (isOrg ? "Your institute" : "Your name");
+  const name = (isOrg ? f("instName") : role === "startup" ? f("startupName") : f("fullName")) || (isOrg ? "Your institute" : role === "startup" ? "Your startup" : "Your name");
   const headline = isOrg ? f("instType") : isPerson ? f("currentTitle") : role === "startup" ? "Startup / MSME" : "";
   const photo = doc.files.photo?.url ?? doc.files.logo?.url;
   const publicUrl = doc.publicSlug ? `${siteOrigin()}/experts/${doc.publicSlug}` : null;

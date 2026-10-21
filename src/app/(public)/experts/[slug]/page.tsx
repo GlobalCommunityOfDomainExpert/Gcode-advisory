@@ -8,6 +8,8 @@ import { getSession } from "@/lib/server/session";
 import { clientIp } from "@/lib/server/guard";
 import { hit } from "@/lib/server/rate-limit";
 import type { PublicExpert } from "@/lib/booking/types";
+import { findRescueOffer } from "@/lib/server/rescue";
+import { ContinueBanner } from "./_components/continue-banner";
 
 const SLUG = /^[a-zA-Z0-9-]{1,60}$/;
 
@@ -29,8 +31,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
  * or not; only published experts have one. Signed-out visitors are sent to sign in to book. Contact details are never shown
  * (there are none in the data). Sections with nothing in them are hidden.
  */
-export default async function PublicExpertPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PublicExpertPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ keep?: string }> }) {
   const { slug } = await params;
+  const { keep } = await searchParams;
   if (!SLUG.test(slug)) notFound();
 
   const ip = clientIp(new Request("http://x", { headers: await headers() }));
@@ -43,5 +46,16 @@ export default async function PublicExpertPage({ params }: { params: Promise<{ s
     if (res.status === 404) notFound();
     return <EmptyState title="We couldn’t load this profile" description="Please refresh the page in a moment." />;
   }
-  return <ExpertPublicView e={res.data} session={session} />;
+  // someone with a paid session the expert could not keep is offered to continue with this expert
+  let banner: React.ReactNode = null;
+  let rescue: { serviceId: number; href: string } | undefined;
+  if (session && session.userId !== res.data.userId) {
+    const found = await findRescueOffer(session.token, res.data.userId);
+    if (found) {
+      // the service on this page that is the paid session: its button carries on with that, instead of starting a new booking
+      rescue = { serviceId: found.offer.serviceId, href: `/experts/${slug}?keep=1` };
+      banner = <ContinueBanner booking={found.booking} expertName={res.data.name} offer={found.offer} expiresAt={found.expiresAt} autoOpen={keep === "1"} />;
+    }
+  }
+  return <ExpertPublicView e={res.data} session={session} banner={banner} rescue={rescue} />;
 }

@@ -163,7 +163,7 @@ export interface ServiceItem {
   /** Visitor view: "Next: Sat, 10 Oct · 9:00 am". */
   next?: string | null;
   href: string;
-  cta: "Book" | "Edit" | "Sign in";
+  cta: "Book" | "Edit" | "Sign in" | "Continue";
 }
 
 /** Each service is one big link: hover lifts it and nudges the arrow, so it clearly reads as clickable. */

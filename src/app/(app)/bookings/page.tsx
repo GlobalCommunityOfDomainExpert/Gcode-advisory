@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/layout";
 import { ButtonLink } from "@/components/atoms";
 import { Banner, EmptyState, PageNumbers } from "@/components/molecules";
 import { PAGE_SIZE, pageFrom, pageHrefs, skipFor } from "@/lib/paging";
+import { fmtDay, fmtTime } from "@/lib/booking/time";
 import { ords } from "@/lib/server/ords";
 import { getSession } from "@/lib/server/session";
 import { BOOKING_TABS, type BookingList as BookingListData, type BookingReason, type BookingTab } from "@/lib/booking/types";
@@ -14,11 +15,17 @@ import { BookingTabs } from "./_components/booking-tabs";
 export const metadata: Metadata = { title: "My bookings" };
 
 /** Sessions you booked and requests you received, in three tabs. The backend decides which buttons each booking shows. */
-export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ tab?: string; page?: string }> }) {
+export default async function BookingsPage({ searchParams }: { searchParams: Promise<{ tab?: string; page?: string; kept?: string; rescue?: string }> }) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
 
-  const { tab: rawTab, page: rawPage } = await searchParams;
+  const { tab: rawTab, page: rawPage, kept, rescue } = await searchParams;
+  // set by the profile page after "Keep your session": "<name>|<time>". Shown once as a message; anything odd is ignored.
+  const [keptWho, keptAt] = (kept ?? "").split("|");
+  const keptNotice =
+    keptWho && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(keptAt ?? "")
+      ? `Request sent to ${keptWho.slice(0, 60)} for ${fmtDay(keptAt)}, ${fmtTime(keptAt)}. Your payment stays with it, nothing more to pay.`
+      : undefined;
   const page = pageFrom(rawPage);
   const tab: BookingTab = BOOKING_TABS.find((t) => t === rawTab) ?? "upcoming";
 
@@ -66,7 +73,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
               </Banner>
             </div>
           )}
-          <BookingList items={res.data.items} reasons={reasons.ok ? reasons.data : []} grouped={tab === "upcoming"} />
+          <BookingList initialNotice={keptNotice} openRescueId={/^\d{1,18}$/.test(rescue ?? "") ? Number(rescue) : undefined} items={res.data.items} reasons={reasons.ok ? reasons.data : []} grouped={tab === "upcoming"} />
           <PageNumbers page={page} hrefs={pageHrefs(res.data.counts[tab] ?? 0, (n) => `/bookings?tab=${tab}${n > 1 ? `&page=${n}` : ""}`)} label="More bookings" />
         </div>
       )}
