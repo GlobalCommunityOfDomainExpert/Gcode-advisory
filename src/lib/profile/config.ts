@@ -79,7 +79,7 @@ export function tabChecks(doc: ProfileDoc, id: SectionId): boolean[] {
     case "pitch":
       return [has("pitch")];
     case "company":
-      return [has("stage"), has("funding"), has("teamSize"), has("industry"), has("location"), has("linkedin"), has("domain"), !!files.deck];
+      return [has("startupName"), has("stage"), has("funding"), has("teamSize"), has("industry"), has("location"), has("linkedin"), has("domain"), !!files.deck];
     case "team":
       return [rows("contacts")];
     case "info":

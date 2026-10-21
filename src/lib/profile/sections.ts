@@ -207,6 +207,7 @@ export function parseSection(role: ProfileRole, section: SectionId, body: unknow
     case "company":
       return fieldsOnly(
         {
+          startupName: short(150),
           stage: (v) => oneOf(v, STARTUP_STAGES),
           funding: (v) => oneOf(v, FUNDING_STATUS),
           teamSize: (v) => {
@@ -221,7 +222,7 @@ export function parseSection(role: ProfileRole, section: SectionId, body: unknow
           },
           domain: url,
         },
-        { stage: "Startup stage", funding: "Funding status", teamSize: "Team size", industry: "Industry", location: "Location", linkedin: "LinkedIn page (a linkedin.com address)", domain: "Public domain" },
+        { startupName: "Startup name", stage: "Startup stage", funding: "Funding status", teamSize: "Team size", industry: "Industry", location: "Location", linkedin: "LinkedIn page (a linkedin.com address)", domain: "Public domain" },
       );
     case "info":
       return fieldsOnly(
@@ -420,7 +421,7 @@ export function sectionBody(doc: ProfileDoc, section: SectionId): Record<string,
     case "pitch":
       return pick("pitch");
     case "company":
-      return pick("stage", "funding", "teamSize", "industry", "location", "linkedin", "domain");
+      return pick("startupName", "stage", "funding", "teamSize", "industry", "location", "linkedin", "domain");
     case "team":
       return { contacts: doc.lists.contacts };
     case "info":

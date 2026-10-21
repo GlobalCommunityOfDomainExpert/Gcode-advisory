@@ -49,7 +49,7 @@ export function TabBody({ section, ctx }: { section: SectionId; ctx: TabContext 
     case "basic":
       return (
         <div className="space-y-5">
-          <TextField id="f-fullName" label={doc.role === "startup" || doc.role === "institute" ? "Account holder name" : "Full name"} icon={User} value={f("fullName")} onChange={(v) => setField("fullName", v)} maxLength={100} hint="Shown on your public profile." />
+          <TextField id="f-fullName" label={doc.role === "startup" || doc.role === "institute" ? "Account holder name" : "Full name"} icon={User} value={f("fullName")} onChange={(v) => setField("fullName", v)} maxLength={100} hint={doc.role === "startup" || doc.role === "institute" ? "Your own name, not the organisation’s." : "Shown on your public profile."} />
           {doc.role !== "startup" && <TextField id="f-location" label="Location" icon={MapPin} value={f("location")} onChange={(v) => setField("location", v)} maxLength={120} placeholder="City, Country" hint="Shown on directory cards. Optional." />}
           {zone("photo", doc.role === "startup" || doc.role === "institute" ? "Logo" : "Profile photo", "Square, JPG or PNG, up to 5 MB", IMAGE_ACCEPT)}
           <FormField label="Stakeholder type" htmlFor="f-role" hint="Chosen at sign-up. It’s part of your identity on GCODE.">
@@ -165,6 +165,7 @@ export function TabBody({ section, ctx }: { section: SectionId; ctx: TabContext 
     case "company":
       return (
         <div className="space-y-5">
+          <TextField id="f-startupName" label="Startup name" icon={Building2} placeholder="e.g. Acme Labs" value={f("startupName")} maxLength={150} onChange={(v) => setField("startupName", v)} hint="The name of your startup, shown as the title of your public profile." />
           <Grid2>
             <SelectField id="f-stage" label="Startup stage" options={STARTUP_STAGES} value={f("stage")} onChange={(v) => setField("stage", v)} />
             <SelectField id="f-funding" label="Funding status" options={FUNDING_STATUS} value={f("funding")} onChange={(v) => setField("funding", v)} />
