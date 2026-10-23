@@ -18,6 +18,10 @@ export interface LimitResult {
 }
 
 export function hit(key: string, limit: number, windowSeconds: number): LimitResult {
+  // Local testing only: DISABLE_RATE_LIMIT=true in .env.local. Ignored in a production build.
+  if (process.env.DISABLE_RATE_LIMIT === "true" && process.env.NODE_ENV !== "production") {
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
   const now = Date.now();
   if (windows.size > MAX_KEYS) {
     for (const [k, w] of windows) if (w.resetAt <= now) windows.delete(k);
