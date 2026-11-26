@@ -80,5 +80,5 @@ export const extendSession = (id: number) => call<CallClockInfo>(`/api/booking/$
 export const getCallClock = (slug: string) => call<CallClockInfo>(`/api/call/${slug}/clock`);
 
 /** "Join now" for a video-service room: makes or finds the room and answers with the link to show. */
-export type JoinAnswer = { kind: "link"; url: string; external: boolean; embed: boolean } | { kind: "room"; token: string; roomId: string } | { kind: "unavailable"; reason: "not_configured" | "busy" | "failed" | "waiting" | "closed" };
+export type JoinAnswer = { kind: "link"; url: string; external: boolean; embed: boolean } | { kind: "room"; token: string; roomId: string } | { kind: "unavailable"; reason: "not_configured" | "busy" | "failed" | "waiting" | "closed" | "early"; opensAt?: string };
 export const joinCall = (slug: string) => call<JoinAnswer>(`/api/call/${slug}/join`, post("", {}));
