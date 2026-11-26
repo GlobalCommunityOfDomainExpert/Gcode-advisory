@@ -12,6 +12,7 @@ import {
 import { Button, ButtonLink } from "@/components/atoms";
 import { RoomFrame, RoomPanel } from "./room-frame";
 import { ZohoRoom } from "./zoho-room";
+import { VideoSdkRoom } from "./videosdk-room";
 import { EndWarning, ExtendButton, ExtendedNote } from "./end-warning";
 import { joinCall } from "@/lib/booking/client";
 import { mmss, useCallClock } from "@/lib/booking/use-call-clock";
@@ -38,7 +39,10 @@ export function VideoLobby({
   bookingId,
   backHref,
   role,
+  name,
 }: {
+  /** The signed-in person's name, shown to the other side inside the room. */
+  name: string;
   title: string;
   who: string;
   when: string;
@@ -54,6 +58,9 @@ export function VideoLobby({
   const [room, setRoom] = useState<{ url: string; embed: boolean } | null>(
     null,
   );
+  const [vsdk, setVsdk] = useState<{ token: string; roomId: string } | null>(
+    null,
+  );
 
   /** One try. Returns true when there is nothing more to try (in, or a real problem); false to keep waiting. */
   const attempt = useCallback(async (): Promise<boolean> => {
@@ -62,6 +69,10 @@ export function VideoLobby({
     if (!res.ok || !answer) {
       setNotice(res.error ?? MESSAGES.failed);
       setPhase("idle");
+      return true;
+    }
+    if (answer.kind === "room") {
+      setVsdk({ token: answer.token, roomId: answer.roomId });
       return true;
     }
     if (answer.kind === "link") {
@@ -88,7 +99,7 @@ export function VideoLobby({
 
   // waiting for the expert: ask again every few seconds until the room exists (or the session's time is up)
   useEffect(() => {
-    if (phase !== "waiting" || room || clock.phase === "ended") return;
+    if (phase !== "waiting" || room || vsdk || clock.phase === "ended") return;
     let alive = true;
     const t = setInterval(async () => {
       if (!alive) return;
@@ -98,7 +109,23 @@ export function VideoLobby({
       alive = false;
       clearInterval(t);
     };
-  }, [phase, room, clock.phase, attempt]);
+  }, [phase, room, vsdk, clock.phase, attempt]);
+
+  if (vsdk)
+    return (
+      <VideoSdkRoom
+        token={vsdk.token}
+        roomId={vsdk.roomId}
+        name={name}
+        title={title}
+        who={who}
+        endAt={endAt}
+        slug={slug}
+        bookingId={bookingId}
+        backHref={backHref}
+        role={role}
+      />
+    );
 
   if (room?.embed)
     return (

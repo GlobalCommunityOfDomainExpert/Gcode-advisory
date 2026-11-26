@@ -255,9 +255,10 @@ export function Lobby(
   props: Parameters<typeof DeviceLobby>[0] & { role: "expert" | "requester" },
 ) {
   if (props.call.kind === "join") {
-    const { title, who, when, endAt, slug, bookingId, backHref, role } = props;
+    const { title, who, when, endAt, slug, bookingId, backHref, role, name } = props;
     return (
       <VideoLobby
+        name={name}
         title={title}
         who={who}
         when={when}

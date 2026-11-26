@@ -38,5 +38,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   }
   // the kept host link goes back to the browser inside `url` anyway; the extra field is not sent on
   if (link.kind === "link") return json({ kind: "link", url: link.url, external: link.external, embed: !!link.embed });
+  if (link.kind === "room") return json({ kind: "room", token: link.token, roomId: link.roomId });
   return json(link);
 }

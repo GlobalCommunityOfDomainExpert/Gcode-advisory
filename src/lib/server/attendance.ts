@@ -1,12 +1,13 @@
 import { ords } from "./ords";
 import { summarizeParticipants, zoho, type Zoho } from "./zoho";
+import { videoSdk, type VideoSdk } from "./videosdk";
 
 /**
  * Fetches the video vendor's report for one ended session and hands it to the database, which settles the booking
  * (ATTENDED or a no-show) on its next sweep. Both roles are always reported, with 0 seconds when nobody of that role came.
  * Returns true when the report was delivered.
  */
-export async function syncAttendance(bookingId: number | string, room: string, token?: string, client: Zoho | null = zoho()): Promise<boolean> {
+export async function syncAttendance(bookingId: number | string, room: string, token?: string, client: Zoho | VideoSdk | null = videoSdk() ?? zoho()): Promise<boolean> {
   const serverKey = process.env.MEETING_SERVER_KEY;
   if (!client || !serverKey) return false;
   try {
