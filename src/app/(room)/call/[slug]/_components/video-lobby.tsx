@@ -1,12 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   CalendarClock,
   Camera,
   Hourglass,
-  Timer,
   Video,
 } from "lucide-react";
 import { Button, ButtonLink } from "@/components/atoms";
@@ -26,7 +25,7 @@ const MESSAGES: Record<string, string> = {
   failed: "We couldn’t open the video room. Please try again in a minute.",
   closed: "This room can’t be reopened from here. The host link only works in the browser that first opened the call, and only while the session is on.",
 };
-const POLL_MS = 5000;
+const POLL_MS = 8000;
 
 /**
  * The lobby for a video-service room: your own camera and microphone check, the session, the time, and one "Join now". The room is made on
@@ -60,6 +59,10 @@ export function VideoLobby({
   /** Set while the room is not open for this person yet (the booker: before the start; the expert: before 5 minutes ahead). */
   const [opensAt, setOpensAt] = useState<string | null>(null);
   const [phase, setPhase] = useState<"idle" | "joining" | "waiting">("idle");
+  const waiting = useRef(false);
+  useEffect(() => {
+    waiting.current = phase === "waiting";
+  }, [phase]);
   const [notice, setNotice] = useState<string | null>(null);
   const [room, setRoom] = useState<{ url: string; embed: boolean } | null>(
     null,
@@ -72,6 +75,8 @@ export function VideoLobby({
   const attempt = useCallback(async (): Promise<boolean> => {
     const res = await joinCall(slug);
     const answer = res.data;
+    // A busy moment on our side is not the end of the wait: someone already waiting keeps waiting and the next try goes through.
+    if (res.status === 429 && waiting.current) return false;
     if (!res.ok || !answer) {
       setNotice(res.error ?? MESSAGES.failed);
       setPhase("idle");
@@ -110,9 +115,16 @@ export function VideoLobby({
     await attempt();
   }
 
+  // Not open yet (known time): no polling at all, one try the moment it opens.
+  useEffect(() => {
+    if (phase !== "waiting" || !opensAt || room || vsdk) return;
+    const t = setTimeout(() => void attempt(), Math.max(0, new Date(opensAt).getTime() - Date.now()) + 500);
+    return () => clearTimeout(t);
+  }, [phase, opensAt, room, vsdk, attempt]);
+
   // waiting for the expert: ask again every few seconds until the room exists (or the session's time is up)
   useEffect(() => {
-    if (phase !== "waiting" || room || vsdk || clock.phase === "ended") return;
+    if (phase !== "waiting" || opensAt || room || vsdk || clock.phase === "ended") return;
     let alive = true;
     const t = setInterval(async () => {
       if (!alive) return;
@@ -122,7 +134,7 @@ export function VideoLobby({
       alive = false;
       clearInterval(t);
     };
-  }, [phase, room, vsdk, clock.phase, attempt]);
+  }, [phase, opensAt, room, vsdk, clock.phase, attempt]);
 
   // the room takes over the camera and microphone: release them here
   const inRoom = !!vsdk || !!room;
@@ -237,15 +249,6 @@ export function VideoLobby({
             <p className="text-small text-white/60">
               {title} · {when}
             </p>
-            <p
-              role="timer"
-              aria-label="Time left"
-              className="text-small text-white/70 tabular-nums"
-            >
-              {clock.phase === "ended"
-                ? "The session’s time is up."
-                : `${mmss(clock.left)} left in this session`}
-            </p>
           </div>
         ) : (
           <>
@@ -262,20 +265,6 @@ export function VideoLobby({
                 />
                 <span className="text-white/60">When</span>
                 <span className="ml-auto text-right font-medium">{when}</span>
-              </li>
-              <li className="flex items-center gap-3 px-4 py-3">
-                <Timer
-                  className="size-4 shrink-0 text-white/60"
-                  aria-hidden="true"
-                />
-                <span className="text-white/60">Time left</span>
-                <span
-                  role="timer"
-                  aria-label="Time left"
-                  className="ml-auto font-medium tabular-nums"
-                >
-                  {clock.phase === "ended" ? "Time is up" : mmss(clock.left)}
-                </span>
               </li>
               <li className="flex items-center gap-3 px-4 py-3">
                 <Camera
