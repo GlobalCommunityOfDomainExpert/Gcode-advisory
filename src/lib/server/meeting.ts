@@ -1,5 +1,6 @@
 import { ords } from "./ords";
 import { isHttps, zoho, ZohoError, type Zoho } from "./zoho";
+import { videoSdk, type VideoSdk } from "./videosdk";
 import type { JoinInfo } from "@/lib/booking/types";
 
 /**
@@ -12,7 +13,11 @@ import type { JoinInfo } from "@/lib/booking/types";
 export type CallLink =
   | { kind: "link"; url: string; external: boolean; embed?: boolean; keep?: string }
   | { kind: "join" }
-  | { kind: "unavailable"; reason: "not_configured" | "busy" | "failed" | "waiting" | "closed" };
+  | { kind: "room"; token: string; roomId: string }
+  | { kind: "unavailable"; reason: "not_configured" | "busy" | "failed" | "waiting" | "closed" | "early"; opensAt?: string };
+
+/** VideoSDK rooms: the expert may enter this long before the start; the booker only from the start. */
+export const EXPERT_EARLY_MS = 5 * 60_000;
 
 /** The SDK's stateless start link: the only host link that works without a Zoho sign-in, and so the only one that can sit in an iframe. */
 const isStateless = (u: string | undefined): u is string => !!u && /\/statelessStart/.test(u) && isHttps(u);
@@ -28,9 +33,41 @@ function keptHostLink(saved: string | undefined, room: string): string | undefin
 }
 
 /** For the call page: for a video-service room it only says whether joining is possible; the room is made when "Join now" is pressed. */
-export function previewCall(info: JoinInfo, client: Zoho | null = zoho()): CallLink | null {
+export function previewCall(info: JoinInfo, client: Zoho | null = zoho(), vsdk: VideoSdk | null = videoSdk()): CallLink | null {
   if (info.provider !== "ZOHO") return null;
-  return client && process.env.MEETING_SERVER_KEY ? { kind: "join" } : { kind: "unavailable", reason: "not_configured" };
+  return (vsdk || client) && process.env.MEETING_SERVER_KEY ? { kind: "join" } : { kind: "unavailable", reason: "not_configured" };
+}
+
+/**
+ * VideoSDK room (the Prebuilt room, as in GCODE Events). Either person may open it: unlike Zoho there is no host link that only the
+ * creating answer carries. The database still decides who may enter and when; every person gets their own short-lived token whose
+ * participant id is "<bookingId>-<role>", valid only until the room closes. The database's provider list is LOCAL/ZOHO, so the room is
+ * reported under ZOHO ("a real video service") with VideoSDK's room id.
+ */
+async function resolveVideoSdk(token: string, info: JoinInfo, vsdk: VideoSdk, serverKey: string, nowMs: number = Date.now()): Promise<CallLink> {
+  // The database opens the window 10 minutes early for both people; here the booker is held back until the start, the expert until 5 minutes before.
+  const opensMs = new Date(info.startAt).getTime() - (info.role === "expert" ? EXPERT_EARLY_MS : 0);
+  if (nowMs < opensMs) return { kind: "unavailable", reason: "early", opensAt: new Date(opensMs).toISOString() };
+  try {
+    let room = info.room;
+    if (!room) {
+      const made = await vsdk.createRoom();
+      const reported = await ords<{ ok: boolean }>(`/bookings/${info.bookingId}/room`, {
+        body: { provider: "ZOHO", room: made, url: "https://videosdk.invalid/" },
+        headers: { "X-Server-Key": serverKey },
+        token,
+      });
+      if (!reported.ok) return { kind: "unavailable", reason: "failed" };
+      // Two people can arrive together: the database keeps the first room. An unused empty room costs nothing, so a lost one is just dropped.
+      const again = await ords<JoinInfo>(`/bookings/call/${info.slug}`, { token });
+      room = again.ok ? again.data.room : undefined;
+      if (!room) return { kind: "unavailable", reason: "failed" };
+    }
+    const ttl = Math.max(120, Math.min(6 * 3600, Math.floor((new Date(info.closesAt).getTime() - Date.now()) / 1000)));
+    return { kind: "room", roomId: room, token: vsdk.tokenFor(room, info.role, `${info.bookingId}-${info.role}`, ttl) };
+  } catch {
+    return { kind: "unavailable", reason: "failed" };
+  }
 }
 
 /**
@@ -42,11 +79,13 @@ export function previewCall(info: JoinInfo, client: Zoho | null = zoho()): CallL
  *    fetched fresh and never stored: the expert the host link, the booker the join link, both opening in their own tab.
  * Either way the first report to the database wins, and the room is reported with the server key.
  */
-export async function resolveCall(token: string, info: JoinInfo, client: Zoho | null = zoho(), savedHostLink?: string): Promise<CallLink> {
+export async function resolveCall(token: string, info: JoinInfo, client: Zoho | null = zoho(), savedHostLink?: string, vsdk: VideoSdk | null = videoSdk()): Promise<CallLink> {
   if (info.state !== "OPEN") return { kind: "unavailable", reason: "failed" };
   if (info.provider === "LOCAL") return info.url ? { kind: "link", url: info.url, external: false } : { kind: "unavailable", reason: "failed" };
 
   const serverKey = process.env.MEETING_SERVER_KEY;
+  // VideoSDK replaces Zoho whenever its keys are set (unset them to fall back to Zoho)
+  if (vsdk && serverKey) return resolveVideoSdk(token, info, vsdk, serverKey);
   if (!client || !serverKey) return { kind: "unavailable", reason: "not_configured" };
   const sdk = client.sdk === true;
 

@@ -10,7 +10,7 @@ import { mmss, useCallClock } from "@/lib/booking/use-call-clock";
 
 /** The video service's own addresses: only messages from these are trusted. */
 const VIDEO_ORIGIN =
-  /^https:\/\/(meeting|meet)\.zoho\.(com|in|eu|com\.au|jp|sa)$|^https:\/\/meeting\.zohocloud\.ca$/;
+  /^https:\/\/(meeting|meet)\.zoho\.(com|in|eu|com\.au|jp|sa)$|^https:\/\/meeting\.zohocloud\.ca$|^https:\/\/embed\.videosdk\.live$/;
 /** Words in a message from the video service that mean "this person's call is over". */
 const ENDED =
   /participant[_ .-]?left|meeting[_ .-]?end|call[_ .-]?end|session[_ .-]?end|ended|left[_ .-]?meeting|leave[_ .-]?meeting|disconnect/i;
@@ -46,10 +46,13 @@ export function ZohoRoom({
   bookingId,
   backHref,
   role = "requester",
+  endLoads = END_LOADS,
 }: {
   title: string;
   who: string;
   url: string;
+  /** Frame loads after which the call counts as over (VideoSDK's room is sent to our "left" page on leave, so 2). */
+  endLoads?: number;
   endAt: string;
   slug: string;
   bookingId: number;
@@ -167,10 +170,10 @@ export function ZohoRoom({
               "[video frame] load",
               loads.current,
               "of",
-              END_LOADS,
+              endLoads,
               (e.currentTarget as HTMLIFrameElement).src,
             );
-            if (loads.current >= END_LOADS) setOver(true);
+            if (loads.current >= endLoads) setOver(true);
           }}
           className="min-h-[65vh] w-full flex-1 border-0 bg-black/40"
         />

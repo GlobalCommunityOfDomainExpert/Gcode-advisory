@@ -7,7 +7,11 @@ const ords = vi.fn();
 vi.mock("./ords", () => ({ ords: (...a: unknown[]) => ords(...a) }));
 vi.mock("./zoho", async (orig) => ({ ...(await orig<typeof import("./zoho")>()), zoho: () => null }));
 
+// a developer's .env.local may hold real VideoSDK keys: the default must never reach the network from a test
+vi.mock("./videosdk", async (orig) => ({ ...(await orig<typeof import("./videosdk")>()), videoSdk: () => null }));
+
 import { previewCall, resolveCall } from "./meeting";
+import type { VideoSdk } from "./videosdk";
 
 const base: JoinInfo = {
   bookingId: 7,
@@ -170,5 +174,56 @@ describe("resolveCall with SDK sessions", () => {
     expect(previewCall(base, sdkClient())).toEqual({ kind: "join" });
     expect(previewCall({ ...base, provider: "LOCAL" }, sdkClient())).toBeNull();
     expect(previewCall(base, null)).toEqual({ kind: "unavailable", reason: "not_configured" });
+  });
+});
+
+describe("resolveCall with VideoSDK", () => {
+  const fakeSdk = () =>
+    ({
+      createRoom: vi.fn(async () => "room-1"),
+      tokenFor: vi.fn(() => "jwt"),
+      endRoom: vi.fn(async () => undefined),
+      getParticipants: vi.fn(async () => []),
+    }) as unknown as VideoSdk & { createRoom: ReturnType<typeof vi.fn>; tokenFor: ReturnType<typeof vi.fn> };
+  const at = (iso: string) => vi.setSystemTime(new Date(iso));
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("holds the booker back until the start, and creates nothing", async () => {
+    const sdk = fakeSdk();
+    at("2026-10-12T04:29:00Z");
+    const out = await resolveCall("tok", base, null, undefined, sdk);
+    expect(out).toEqual({ kind: "unavailable", reason: "early", opensAt: "2026-10-12T04:30:00.000Z" });
+    expect(sdk.createRoom).not.toHaveBeenCalled();
+    expect(ords).not.toHaveBeenCalled();
+  });
+
+  it("lets the booker in from the start with a token for their own id", async () => {
+    const sdk = fakeSdk();
+    ords.mockResolvedValueOnce({ ok: true, data: { ok: true } }).mockResolvedValueOnce({ ok: true, data: { ...base, room: "room-1" } });
+    at("2026-10-12T04:30:00Z");
+    const out = await resolveCall("tok", base, null, undefined, sdk);
+    expect(out).toEqual({ kind: "room", token: "jwt", roomId: "room-1" });
+    expect(sdk.tokenFor).toHaveBeenCalledWith("room-1", "requester", "7-requester", expect.any(Number));
+    expect(ords.mock.calls[0][1].headers).toEqual({ "X-Server-Key": "key-1" });
+  });
+
+  it("lets the expert in five minutes early, but not earlier", async () => {
+    const sdk = fakeSdk();
+    const expert = { ...base, role: "expert" as const };
+    at("2026-10-12T04:24:59Z");
+    expect(await resolveCall("tok", expert, null, undefined, sdk)).toMatchObject({ kind: "unavailable", reason: "early", opensAt: "2026-10-12T04:25:00.000Z" });
+    ords.mockResolvedValueOnce({ ok: true, data: { ok: true } }).mockResolvedValueOnce({ ok: true, data: { ...base, room: "room-1" } });
+    at("2026-10-12T04:25:00Z");
+    expect(await resolveCall("tok", expert, null, undefined, sdk)).toMatchObject({ kind: "room" });
+  });
+
+  it("reuses the room the database already holds", async () => {
+    const sdk = fakeSdk();
+    at("2026-10-12T04:40:00Z");
+    const out = await resolveCall("tok", { ...base, room: "room-0" }, null, undefined, sdk);
+    expect(out).toMatchObject({ kind: "room", roomId: "room-0" });
+    expect(sdk.createRoom).not.toHaveBeenCalled();
   });
 });

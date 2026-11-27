@@ -12,7 +12,11 @@ import {
 import { Button, ButtonLink } from "@/components/atoms";
 import { RoomFrame, RoomPanel } from "./room-frame";
 import { ZohoRoom } from "./zoho-room";
+import { VideoSdkRoom } from "./videosdk-room";
 import { EndWarning, ExtendButton, ExtendedNote } from "./end-warning";
+import { DeviceCheck } from "./device-check";
+import { useLocalMedia } from "@/lib/booking/use-local-media";
+import { fmtTime } from "@/lib/booking/time";
 import { joinCall } from "@/lib/booking/client";
 import { mmss, useCallClock } from "@/lib/booking/use-call-clock";
 
@@ -25,9 +29,9 @@ const MESSAGES: Record<string, string> = {
 const POLL_MS = 5000;
 
 /**
- * The lobby for a video-service room. No device check of our own (the video service asks for the camera and microphone itself once you are
- * in, so a second check would only ask twice): the session, the time, and one "Join now". The expert's press makes the room. A booker who
- * presses it before the expert has opened the room waits on this screen and is let in by itself the moment the room exists.
+ * The lobby for a video-service room: your own camera and microphone check, the session, the time, and one "Join now". The room is made on
+ * the first press from either person. Before their time the server answers "early" (the booker is let in from the start, the expert 5 minutes
+ * before it) and this screen waits and lets them in by itself; a Zoho booker who arrives before the expert waits the same way.
  */
 export function VideoLobby({
   title,
@@ -38,7 +42,10 @@ export function VideoLobby({
   bookingId,
   backHref,
   role,
+  name,
 }: {
+  /** The signed-in person's name, shown to the other side inside the room. */
+  name: string;
   title: string;
   who: string;
   when: string;
@@ -49,9 +56,15 @@ export function VideoLobby({
   role: "expert" | "requester";
 }) {
   const clock = useCallClock(slug, endAt, bookingId);
+  const media = useLocalMedia();
+  /** Set while the room is not open for this person yet (the booker: before the start; the expert: before 5 minutes ahead). */
+  const [opensAt, setOpensAt] = useState<string | null>(null);
   const [phase, setPhase] = useState<"idle" | "joining" | "waiting">("idle");
   const [notice, setNotice] = useState<string | null>(null);
   const [room, setRoom] = useState<{ url: string; embed: boolean } | null>(
+    null,
+  );
+  const [vsdk, setVsdk] = useState<{ token: string; roomId: string } | null>(
     null,
   );
 
@@ -64,13 +77,24 @@ export function VideoLobby({
       setPhase("idle");
       return true;
     }
+    if (answer.kind === "room") {
+      setVsdk({ token: answer.token, roomId: answer.roomId });
+      return true;
+    }
     if (answer.kind === "link") {
       setRoom({ url: answer.url, embed: answer.embed });
       if (!answer.embed)
         window.open(answer.url, "_blank", "noopener,noreferrer");
       return true;
     }
+    if (answer.reason === "early") {
+      setOpensAt(answer.opensAt ?? null);
+      setPhase("waiting");
+      setNotice(null);
+      return false;
+    }
     if (answer.reason === "waiting") {
+      setOpensAt(null);
       setPhase("waiting");
       setNotice(null);
       return false;
@@ -88,7 +112,7 @@ export function VideoLobby({
 
   // waiting for the expert: ask again every few seconds until the room exists (or the session's time is up)
   useEffect(() => {
-    if (phase !== "waiting" || room || clock.phase === "ended") return;
+    if (phase !== "waiting" || room || vsdk || clock.phase === "ended") return;
     let alive = true;
     const t = setInterval(async () => {
       if (!alive) return;
@@ -98,7 +122,30 @@ export function VideoLobby({
       alive = false;
       clearInterval(t);
     };
-  }, [phase, room, clock.phase, attempt]);
+  }, [phase, room, vsdk, clock.phase, attempt]);
+
+  // the room takes over the camera and microphone: release them here
+  const inRoom = !!vsdk || !!room;
+  const stopMedia = media.stop;
+  useEffect(() => {
+    if (inRoom) stopMedia();
+  }, [inRoom, stopMedia]);
+
+  if (vsdk)
+    return (
+      <VideoSdkRoom
+        token={vsdk.token}
+        roomId={vsdk.roomId}
+        name={name}
+        title={title}
+        who={who}
+        endAt={endAt}
+        slug={slug}
+        bookingId={bookingId}
+        backHref={backHref}
+        role={role}
+      />
+    );
 
   if (room?.embed)
     return (
@@ -166,20 +213,26 @@ export function VideoLobby({
   return (
     <RoomFrame title={title} who={who}>
       <RoomPanel>
+        <DeviceCheck media={media} name={name} />
         {phase === "waiting" ? (
           <div role="status" className="space-y-4">
             <span className="grid size-12 place-items-center rounded-full bg-white/10">
               <Hourglass className="size-5 animate-pulse" aria-hidden="true" />
             </span>
             <p className="text-small font-bold tracking-widest text-white/60 uppercase">
-              Waiting for the expert
+              {opensAt ? "Not open yet" : "Waiting for the expert"}
             </p>
             <h1 className="text-heading font-extrabold">
-              Waiting for {who} to open the room
+              {opensAt
+                ? `The room opens at ${fmtTime(opensAt)}`
+                : `Waiting for ${who} to open the room`}
             </h1>
             <p className="text-body text-white/70">
-              You’ll be let in automatically the moment they do. You can leave
-              this page open.
+              {opensAt
+                ? role === "expert"
+                  ? "You can go in five minutes before the start. Check your camera and microphone above; this page lets you in by itself."
+                  : "You can go in when the session starts. Check your camera and microphone above; this page lets you in by itself."
+                : "You’ll be let in automatically the moment they do. You can leave this page open."}
             </p>
             <p className="text-small text-white/60">
               {title} · {when}
@@ -231,7 +284,7 @@ export function VideoLobby({
                 />
                 <span className="text-white/60">Camera and mic</span>
                 <span className="ml-auto text-right font-medium">
-                  Asked once you’re in
+                  Check them above
                 </span>
               </li>
             </ul>
