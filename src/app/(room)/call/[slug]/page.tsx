@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { ButtonLink } from "@/components/atoms";
 import { ords } from "@/lib/server/ords";
 import { getSession } from "@/lib/server/session";
-import { previewCall, resolveCall } from "@/lib/server/meeting";
+import { previewCall, resolveCall, videoSdkOpensAt } from "@/lib/server/meeting";
+import { videoSdk } from "@/lib/server/videosdk";
 import { syncAttendance } from "@/lib/server/attendance";
 import type { JoinInfo } from "@/lib/booking/types";
 import { fmtDayLong, fmtTime } from "@/lib/booking/time";
@@ -70,6 +71,20 @@ export default async function CallPage({ params }: { params: Promise<{ slug: str
         <ButtonLink href="/bookings" variant="onDark" size="sm">Back to My Bookings</ButtonLink>
       </Notice>
     );
+  }
+
+  // VideoSDK rooms open later than the database's window: the booker at the start, the expert 5 minutes before it
+  if (info.state === "OPEN" && info.provider === "ZOHO" && videoSdk()) {
+    const opensAt = videoSdkOpensAt(info);
+    if (Date.now() < new Date(opensAt).getTime()) {
+      return (
+        <Notice title={info.serviceTitle} who={info.otherName}>
+          <OpensIn opensAt={opensAt} lead={info.role === "expert" ? "opens 5 minutes before the session" : "opens when the session starts"} />
+          <p className="text-small text-white/60">{when}</p>
+          <ButtonLink href="/bookings" variant="onDark" size="sm">Back to My Bookings</ButtonLink>
+        </Notice>
+      );
+    }
   }
 
   if (info.state === "ENDED") {

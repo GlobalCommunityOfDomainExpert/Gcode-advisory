@@ -19,6 +19,11 @@ export type CallLink =
 /** VideoSDK rooms: the expert may enter this long before the start; the booker only from the start. */
 export const EXPERT_EARLY_MS = 5 * 60_000;
 
+/** When this person may enter a VideoSDK room (ISO). The database's own window (10 minutes early) is wider and is not used for these rooms. */
+export function videoSdkOpensAt(info: Pick<JoinInfo, "role" | "startAt">): string {
+  return new Date(new Date(info.startAt).getTime() - (info.role === "expert" ? EXPERT_EARLY_MS : 0)).toISOString();
+}
+
 /** The SDK's stateless start link: the only host link that works without a Zoho sign-in, and so the only one that can sit in an iframe. */
 const isStateless = (u: string | undefined): u is string => !!u && /\/statelessStart/.test(u) && isHttps(u);
 
@@ -46,8 +51,8 @@ export function previewCall(info: JoinInfo, client: Zoho | null = zoho(), vsdk: 
  */
 async function resolveVideoSdk(token: string, info: JoinInfo, vsdk: VideoSdk, serverKey: string, nowMs: number = Date.now()): Promise<CallLink> {
   // The database opens the window 10 minutes early for both people; here the booker is held back until the start, the expert until 5 minutes before.
-  const opensMs = new Date(info.startAt).getTime() - (info.role === "expert" ? EXPERT_EARLY_MS : 0);
-  if (nowMs < opensMs) return { kind: "unavailable", reason: "early", opensAt: new Date(opensMs).toISOString() };
+  const opensAt = videoSdkOpensAt(info);
+  if (nowMs < new Date(opensAt).getTime()) return { kind: "unavailable", reason: "early", opensAt };
   try {
     let room = info.room;
     if (!room) {
