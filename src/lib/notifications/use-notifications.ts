@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { NotificationItem, NotificationList } from "./types";
+import { withBase } from "@/lib/base-path";
 
 const POLL_MS = 60_000;
 
@@ -22,7 +23,7 @@ export function useNotifications() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch("/api/notifications", { credentials: "same-origin", cache: "no-store" });
+      const res = await fetch(withBase("/api/notifications"), { credentials: "same-origin", cache: "no-store" });
       if (!res.ok) return;
       const data = (await res.json()) as NotificationList;
       setItems(Array.isArray(data.items) ? data.items : []);

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/atoms";
+import { withBase } from "@/lib/base-path";
 
 /** Publish or take down the profile from the profile view, the same calls the editor makes. Refuses below 100% (the server checks). */
 export function PublishControl({ published, complete }: { published: boolean; complete: boolean }) {
@@ -14,7 +15,7 @@ export function PublishControl({ published, complete }: { published: boolean; co
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/profile/publish", {
+      const res = await fetch(withBase("/api/profile/publish"), {
         method: publish ? "POST" : "DELETE",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },

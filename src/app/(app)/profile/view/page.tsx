@@ -7,7 +7,7 @@ import { AboutText, Chips, ExpList, Intro, RailCard, ReviewsBlock, Section, Serv
 import { PublishControl } from "@/components/profile-view/publish-control";
 import { ShareButton } from "@/components/profile-view/share-button";
 import { getSession } from "@/lib/server/session";
-import { siteOrigin } from "@/lib/server/env";
+import { siteUrl } from "@/lib/server/env";
 import { loadProfile } from "@/lib/server/profile";
 import { ords } from "@/lib/server/ords";
 import { DAY_LABEL } from "@/lib/profile/services";
@@ -74,7 +74,7 @@ export default async function ProfileViewPage() {
   const name = (isOrg ? f("instName") : role === "startup" ? f("startupName") : f("fullName")) || (isOrg ? "Your institute" : role === "startup" ? "Your startup" : "Your name");
   const headline = isOrg ? f("instType") : isPerson ? f("currentTitle") : role === "startup" ? "Startup / MSME" : "";
   const photo = doc.files.photo?.url ?? doc.files.logo?.url;
-  const publicUrl = doc.publicSlug ? `${siteOrigin()}/experts/${doc.publicSlug}` : null;
+  const publicUrl = doc.publicSlug ? `${siteUrl()}/experts/${doc.publicSlug}` : null;
 
   const career = doc.lists.career.filter((c) => clean(c.title));
   const education = doc.lists.education.filter((e) => clean(e.institution));

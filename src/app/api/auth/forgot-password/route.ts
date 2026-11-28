@@ -1,5 +1,5 @@
 import { clientIp, fail, isResponse, json, limited, readJson, str } from "@/lib/server/guard";
-import { siteOrigin } from "@/lib/server/env";
+import { siteUrl } from "@/lib/server/env";
 import { ords } from "@/lib/server/ords";
 import { isEmail, normalizeEmail } from "@/lib/auth/validators";
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
   // The link in the email is built from our configured origin, never from a client value or the Host header,
   // so an attacker can't make a victim's reset email point at a look-alike site.
-  await ords("/auth/forgot-password", { body: { email, origin: siteOrigin() } });
+  await ords("/auth/forgot-password", { body: { email, origin: siteUrl() } });
 
   // Same answer whether or not the address has an account, and whether or not the send worked.
   return json({ ok: true });

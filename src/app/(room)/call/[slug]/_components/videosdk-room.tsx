@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { ZohoRoom } from "./zoho-room";
+import { withBase } from "@/lib/base-path";
 
 // Same Prebuilt version and options as GCODE Events. Pinned on purpose. The trailing slash is required: without it the host answers 302
 // and drops the whole query string (token, meetingId, name), and Prebuilt then fails with error 4001.
@@ -91,7 +92,7 @@ export function VideoSdkRoom({
       token,
       meetingId: roomId,
       name,
-      redirectOnLeave: `${origin}/call-left.html`,
+      redirectOnLeave: `${origin}${withBase("/call-left.html")}`,
       ...roomOptions(rest.role, origin),
     });
     return `${PREBUILT_URL}?${q}`;

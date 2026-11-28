@@ -1,3 +1,4 @@
+import { withBase } from "@/lib/base-path";
 /** Browser side of the auth API. Talks only to our own /api/auth routes; the backend is never called from the browser. */
 
 export interface AuthResult<T = Record<string, never>> {
@@ -10,7 +11,7 @@ export interface AuthResult<T = Record<string, never>> {
 
 export async function postAuth<T = Record<string, never>>(path: string, body: unknown): Promise<AuthResult<T>> {
   try {
-    const res = await fetch(`/api/auth/${path}`, {
+    const res = await fetch(withBase(`/api/auth/${path}`), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "same-origin",

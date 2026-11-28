@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { withBase } from "@/lib/base-path";
 
 export interface WordmarkProps {
   /** Navy lettering for light backgrounds (the footer); white lettering (default) for the navy navbar. */
@@ -14,9 +15,9 @@ export interface WordmarkProps {
 export function Wordmark({ dark = false, size = "md", href = "/" }: WordmarkProps) {
   const lg = size === "lg";
   return (
-    <a href={href} className="flex items-center" aria-label="GCODE — Power it up">
+    <a href={href.startsWith("/") ? withBase(href) : href} className="flex items-center" aria-label="GCODE — Power it up">
       <Image
-        src={dark ? "/gcode-logo-dark.png" : "/app-logo.png"}
+        src={withBase(dark ? "/gcode-logo-dark.png" : "/app-logo.png")}
         alt=""
         width={1271}
         height={549}

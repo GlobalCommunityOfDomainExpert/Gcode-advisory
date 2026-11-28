@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/atoms";
 import { Banner, Modal } from "@/components/molecules";
 import { SettingGroup, ValueLine } from "@/components/domain";
+import { withBase } from "@/lib/base-path";
 
 /**
  * Pause the account, and bring it back. Nothing is deleted: the profile is hidden, nobody can book it, and sessions that are
@@ -21,7 +22,7 @@ export function DangerZone({ deactivated: initial }: { deactivated: boolean }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/account/deactivate", { method, credentials: "same-origin" });
+      const res = await fetch(withBase("/api/account/deactivate"), { method, credentials: "same-origin" });
       const json = await res.json().catch(() => null);
       if (!res.ok) throw new Error(json?.error ?? "Something went wrong. Please try again.");
       setDeactivated(json.deactivated === true);
