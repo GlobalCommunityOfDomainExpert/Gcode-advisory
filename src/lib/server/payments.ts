@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { CashfreeError, cashfree, toMinor, type Cashfree } from "./cashfree";
-import { siteOrigin } from "./env";
+import { siteUrl } from "./env";
 import { ords, type OrdsResult } from "./ords";
 import type { PaymentOrder, PayoutAccount } from "@/lib/booking/types";
 
@@ -44,7 +44,7 @@ export const bookingOfOrder = (orderId: string): string | null => ORDER_ID.exec(
 export type StartResult = { ok: true; data: PaymentOrder & { checkoutMode?: "sandbox" | "production" } } | Extract<OrdsResult<never>, { ok: false }>;
 
 /** POST /api/booking/:id/pay. With the STUB gateway the database does everything; with Cashfree this creates the order. */
-export async function startPayment(token: string, bookingId: string, cf: Cashfree | null = cashfree(), api: ServerApi = serverApi(), origin = siteOrigin(), call = ords): Promise<StartResult> {
+export async function startPayment(token: string, bookingId: string, cf: Cashfree | null = cashfree(), api: ServerApi = serverApi(), origin = siteUrl(), call = ords): Promise<StartResult> {
   const first = await call<Intent | PaymentOrder>(`/bookings/${bookingId}/pay`, { method: "POST", body: {}, token });
   if (!first.ok) return first;
   const data = first.data as Intent;

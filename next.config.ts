@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { BASE_PATH } from "./src/lib/base-path";
 
 // The video call runs in an iframe from the video service (Zoho Meeting, whichever data centre the account is on): the browser only
 // hands the camera, microphone and screen share to a frame the page names here.
@@ -15,6 +16,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Served under gcode.in/advisory. Header sources below get the prefix automatically.
+  basePath: BASE_PATH,
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",

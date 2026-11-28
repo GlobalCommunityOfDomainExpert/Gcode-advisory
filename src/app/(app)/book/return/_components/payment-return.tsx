@@ -8,6 +8,7 @@ import { Banner } from "@/components/molecules";
 import type { ReactNode } from "react";
 import { fmtDay, fmtTime, rupees } from "@/lib/booking/time";
 import type { BookingView } from "@/lib/booking/types";
+import { withBase } from "@/lib/base-path";
 
 type Verdict = "PAID" | "FAILED" | "PENDING" | "EXPIRED" | "ERROR";
 interface Verified {
@@ -33,7 +34,7 @@ export function PaymentReturn({ orderId }: { orderId: string | null }) {
     let cancelled = false;
     async function check(n: number) {
       try {
-        const res = await fetch("/api/payments/verify", {
+        const res = await fetch(withBase("/api/payments/verify"), {
           method: "POST",
           credentials: "same-origin",
           headers: { "Content-Type": "application/json" },

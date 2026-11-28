@@ -7,6 +7,7 @@ import { Button, Input } from "@/components/atoms";
 import { Banner, FormField, ToggleGroup } from "@/components/molecules";
 import { SettingGroup } from "@/components/domain";
 import type { PayoutAccount } from "@/lib/booking/types";
+import { withBase } from "@/lib/base-path";
 
 /** The expert's payout account, inside Account settings. Details go to our payment partner once; we keep only a masked label. Earnings live on the Payouts page. */
 export function PayoutAccountSettings({ account }: { account: PayoutAccount }) {
@@ -26,7 +27,7 @@ export function PayoutAccountSettings({ account }: { account: PayoutAccount }) {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/payout/account", {
+      const res = await fetch(withBase("/api/payout/account"), {
         method: "PUT",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },

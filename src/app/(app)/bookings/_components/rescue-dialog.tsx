@@ -14,6 +14,7 @@ import { getRescueOptions, rebookRescue, refundRescue } from "@/lib/booking/clie
 import { fmtDay, fmtTime, rupees } from "@/lib/booking/time";
 import { useLoaded } from "@/lib/booking/use-loaded";
 import type { BookingView, RescueExpert } from "@/lib/booking/types";
+import { withBase } from "@/lib/base-path";
 
 interface Choice {
   serviceId: number;
@@ -203,7 +204,7 @@ function RescueForm({ booking, onClose, onDone }: { booking: BookingView; onClos
                         <p className="text-small text-success font-semibold">Same price, nothing to pay.</p>
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           {e.slug && (
-                            <a href={`/experts/${e.slug}`} target="_blank" rel="noopener noreferrer" className="text-small text-primary font-semibold underline-offset-2 hover:underline">
+                            <a href={withBase(`/experts/${e.slug}`)} target="_blank" rel="noopener noreferrer" className="text-small text-primary font-semibold underline-offset-2 hover:underline">
                               View full profile
                             </a>
                           )}

@@ -21,7 +21,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   if (isResponse(ctx)) return ctx;
   const slug = (await params).slug.toLowerCase();
   if (!SLUG.test(slug)) return fail("We couldn’t find that session.", 404);
-  const blocked = limited([[`call:join:${ctx.session.userId}`, 30, 10 * 60]]);
+  const blocked = limited([[`call:join:${ctx.session.userId}`, 120, 10 * 60]]);
   if (blocked) return blocked;
 
   const res = await ords<JoinInfo>(`/bookings/call/${slug}`, { token: ctx.session.token });

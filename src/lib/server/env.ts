@@ -1,3 +1,5 @@
+import { BASE_PATH } from "@/lib/base-path";
+
 /** Server-only configuration. Missing values fail closed: no default backend URL, no default signing secret. */
 
 function required(name: string): string {
@@ -21,6 +23,11 @@ export function authSecret(): string {
 }
 
 /** Public origin of this app. Used for the Origin check and for links in emails (never taken from the request). */
+/** siteOrigin() plus the base path: the app's public root, for links that leave the app (emails, payment returns, share links). */
+export function siteUrl(): string {
+  return `${siteOrigin()}${BASE_PATH}`;
+}
+
 export function siteOrigin(): string {
   return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").origin;
 }

@@ -5,6 +5,7 @@ import { Button, Input, RemoveIconButton, SectionLabel, Textarea } from "@/compo
 import { X, type LucideIcon } from "lucide-react";
 import { Chip, FormField } from "@/components/molecules";
 import { SKILL_SUGGESTIONS } from "@/lib/profile/options";
+import { withBase } from "@/lib/base-path";
 
 /* Small form building blocks shared by the profile tabs. They only render and report changes; the editor owns state. */
 
@@ -249,7 +250,7 @@ export function SkillsField({ skills, onChange }: { skills: string[]; onChange: 
     const ctrl = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/profile/skills?q=${encodeURIComponent(q)}`, { signal: ctrl.signal, cache: "no-store" });
+        const res = await fetch(withBase(`/api/profile/skills?q=${encodeURIComponent(q)}`), { signal: ctrl.signal, cache: "no-store" });
         if (!res.ok) throw new Error("lookup failed");
         const data = (await res.json()) as { skills?: string[] };
         setFound(data.skills ?? []);

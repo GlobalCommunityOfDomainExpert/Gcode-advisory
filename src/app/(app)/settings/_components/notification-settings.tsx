@@ -6,6 +6,7 @@ import { Select, Switch } from "@/components/atoms";
 import { Banner } from "@/components/molecules";
 import { SettingGroup } from "@/components/domain";
 import type { NotificationPrefs } from "@/lib/notifications/types";
+import { withBase } from "@/lib/base-path";
 
 /** Every half hour, "HH:MM" for the server and "10:30 pm" for people. */
 const TIMES = Array.from({ length: 48 }, (_, i) => {
@@ -33,7 +34,7 @@ export function NotificationSettings({ initial, email }: { initial: Notification
     setState("saving");
     setError(null);
     try {
-      const res = await fetch("/api/notifications/prefs", {
+      const res = await fetch(withBase("/api/notifications/prefs"), {
         method: "PUT",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
